@@ -34,10 +34,17 @@ columnSeparator = "|"
 MONTHS = {'Jan':'01','Feb':'02','Mar':'03','Apr':'04','May':'05','Jun':'06',\
         'Jul':'07','Aug':'08','Sep':'09','Oct':'10','Nov':'11','Dec':'12'}
 
-# Table attributes for table entry (dictionary) keys
-ITEM_ID, NAME, CURRENTLY, FIRST_BID, NUMBER_OF_BIDS, BUY_PRICE, SELLER_ID, \
-ENDS, STARTED, DESCRIPTION, CATEGORY, USERID, COUNTRY, LOCATION, RATING, \
-BID_ID, BIDDER_ID, TIME, AMOUNT = range(19)
+# Table attributes
+ITEM_ID, NAME, CURRENTLY, FIRST_BID, NUMBER_OF_BIDS, BUY_PRICE, SELLER_ID,\
+    ENDS, STARTED, DESCRIPTION, CATEGORY, USER_ID, COUNTRY, LOCATION, RATING,\
+    BID_ID, BIDDER_ID, TIME, AMOUNT = range(19)
+
+# Table attributes orders
+item_attr_order = [ITEM_ID, NAME, CURRENTLY, FIRST_BID, NUMBER_OF_BIDS, BUY_PRICE,\
+    SELLER_ID, ENDS, STARTED, DESCRIPTION]
+category_attr_order = [ITEM_ID, CATEGORY]
+user_attr_order = [USER_ID, COUNTRY, LOCATION, RATING]
+bid_attr_order = [BIDDER_ID, ITEM_ID, TIME, AMOUNT]
 
 """
 Returns true if a file ends in .json
@@ -74,6 +81,23 @@ def transformDollar(money):
     return sub(r'[^\d.]', '', money)
 
 """
+Transform an entity table to a unique, SQL-interpretable-formatted string array
+"""
+def transformTable(table, order):
+    arr = list()
+    for entry in table:
+        str = ''
+        for attr in order:
+            str += (entry[attr] + columnSeparator)
+        str = str[:-len(columnSeparator)] # discard columnSeparator at the end of the string
+        arr.append(str)
+    return list(set(arr))
+
+def dumpStrArray(output_name, arr):
+    with open(output_name, 'w') as f:
+        for entry in arr:
+            f.write(entry + '\n')
+"""
 Parses a single json file. Currently, there's a loop that iterates over each
 item in the data set. Your job is to extend this functionality to create all
 of the necessary SQL tables for your database.
@@ -84,11 +108,9 @@ def parseJson(json_file):
     with open(json_file, 'r') as f:
         items = loads(f.read())['Items'] # creates a Python dictionary of Items for the supplied json file
         for item in items:
-            # parse for common keys
-            item_id = int(item['ItemID'])
             # parse item_table attributes from item
             item_entry = dict()
-            item_entry[ITEM_ID] = item_id
+            item_id = item_entry[ITEM_ID] = int(item['ItemID'])
             item_entry[SELLER_ID] = int(item['Seller']['UserID'])
             item_entry[NAME] = item['Name'].strip()  # TODO: handle quotation mark
             item_entry[DESCRIPTION] = item['Description'].strip() # TODO: handle quotation mark
@@ -100,11 +122,35 @@ def parseJson(json_file):
             item_entry[ENDS] = transformDttm(item['Ends'])
             item_table.add(item_entry)
             # parse category_table attributes from item
-            for category in item['Category']:
-                category_table.append({CATEGORY:category, ITEM_ID:item_id})
-            # parse bid_table attributes from item
-
-            # parse user_table attributes from item
+            category_table.extend([{CATEGORY:category, ITEM_ID:item_id} for category in item['Category']])
+            # parse user_table and bid_table attributes from item
+            user_table.append({USER_ID:item['Seller']['UserID'], RATING:item['Seller']['Rating'],
+                              LOCATION:item['Location'], COUNTRY:item['Country']})
+            for bid in item['Bids']:
+                bid_entry = dict()
+                bidder = bid['Bidder']
+                bidder_id = bid_entry[BIDDER_ID] = bidder[USER_ID]
+                amount = bid_entry[AMOUNT] = transformDollar(bid['Amount'])
+                time = bid_entry[TIME] = transformDttm(bid['Time'])
+                bid_entry[ITEM_ID] = item_id
+                # bid_entry[BID_ID] = hash(item_id + bidder_id + amount + time) /* I think bid_id is unnecessary */
+                bid_table.append(bid_entry)
+                user_entry = dict()
+                user_entry[USER_ID] = bidder['UserID']
+                user_entry[LOCATION] = bidder['Location'] if 'Location' in bidder else None
+                user_entry[RATING] = bidder['Rating'] if 'Rating' in bidder else None
+                user_table.append(user_entry)
+    # transform tables into unique, SQL interpretable string arrays
+    item_arr = transformTable(item_table, item_attr_order)
+    category_arr = transformTable(category_table, category_attr_order)
+    user_arr = transformTable(user_table, user_attr_order)
+    bid_arr = transformTable(bid_table, bid_attr_order)
+    # dump string arrays into .dat files
+    output_name = json_file.replace('.json', '.dat')
+    dumpStrArray('item' + output_name, item_arr)
+    dumpStrArray('category' + output_name, category_arr)
+    dumpStrArray('user' + output_name, user_arr)
+    dumpStrArray('bid' + output_name, bid_arr)
 
 """
 Loops through each json files provided on the command line and passes each file
