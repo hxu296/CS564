@@ -93,6 +93,9 @@ def transformTable(table, order):
         arr.append(str)
     return list(set(arr))
 
+"""
+dump arr into a file named output_name
+"""
 def dumpStrArray(output_name, arr):
     with open(output_name, 'w') as f:
         for entry in arr:

@@ -1,7 +1,0 @@
-
-
-check Number_of_Bids, particularly, if it's 0
-strip every value before reformat
-escape double quote (think about where might double quotes exists)
-duplicate removal (unix command line recommended, think about shell script)
-
