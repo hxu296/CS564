@@ -161,11 +161,11 @@ def parseJson(json_file):
     user_arr = transformTable(user_table, user_attr_order)
     bid_arr = transformTable(bid_table, bid_attr_order)
     # dump string arrays into .dat files
-    output_name = json_file.replace('.json', '.dat')
-    dumpArray('item' + output_name, item_arr)
-    dumpArray('category' + output_name, category_arr)
-    dumpArray('user' + output_name, user_arr)
-    dumpArray('bid' + output_name, bid_arr)
+    output_name = json_file[:-5]
+    dumpArray(output_name + '-item.dat', item_arr)
+    dumpArray(output_name + '-category.dat', category_arr)
+    dumpArray(output_name + '-user.dat', user_arr)
+    dumpArray(output_name + '-bid.dat', bid_arr)
 
 """
 Loops through each json files provided on the command line and passes each file
