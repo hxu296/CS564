@@ -148,7 +148,7 @@ def parseJson(json_file):
                     amount = bid_entry[AMOUNT] = transformDollar(bid['Amount'])
                     time = bid_entry[TIME] = transformDttm(bid['Time'])
                     bid_entry[ITEM_ID] = item_id
-                    bid_entry[BID_ID] = hash(item_id + bidder_id + amount + time) /* I think bid_id is unnecessary, but let's see... */
+                    bid_entry[BID_ID] = hash('{}{}{}{}'.format(item_id, bidder_id, amount, time))
                     bid_table.append(bid_entry)
                     user_entry = dict()
                     user_entry[USER_ID] = bidder['UserID']
