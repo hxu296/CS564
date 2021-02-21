@@ -44,7 +44,7 @@ item_attr_order = [ITEM_ID, NAME, CURRENTLY, FIRST_BID, NUMBER_OF_BIDS, BUY_PRIC
     SELLER_ID, ENDS, STARTED, DESCRIPTION]
 category_attr_order = [ITEM_ID, CATEGORY]
 user_attr_order = [USER_ID, COUNTRY, LOCATION, RATING]
-bid_attr_order = [BIDDER_ID, ITEM_ID, TIME, AMOUNT]
+bid_attr_order = [BID_ID, BIDDER_ID, ITEM_ID, TIME, AMOUNT]
 
 """
 Returns true if a file ends in .json
@@ -148,7 +148,7 @@ def parseJson(json_file):
                     amount = bid_entry[AMOUNT] = transformDollar(bid['Amount'])
                     time = bid_entry[TIME] = transformDttm(bid['Time'])
                     bid_entry[ITEM_ID] = item_id
-                    # bid_entry[BID_ID] = hash(item_id + bidder_id + amount + time) /* I think bid_id is unnecessary */
+                    bid_entry[BID_ID] = hash(item_id + bidder_id + amount + time) /* I think bid_id is unnecessary, but let's see... */
                     bid_table.append(bid_entry)
                     user_entry = dict()
                     user_entry[USER_ID] = bidder['UserID']
