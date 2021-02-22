@@ -1,0 +1,6 @@
+.separator |
+.import items.dat Items
+// update, which ones are NULL
+.import categories.dat Categories
+.import users.dat Users
+.import bids.dat Bids
