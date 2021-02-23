@@ -32,7 +32,7 @@ CREATE TABLE Users (
 	UserID		CHAR(255)	    UNIQUE NOT NULL,
 	Country	    CHAR(255)	    NOT NULL,
 	Location	CHAR(255)	    NOT NULL,
-	Rating		INT(DOUBLE?)	NOT NULL,
+	Rating		INT				NOT NULL,
 	PRIMARY KEY (UserID)
 );
 
