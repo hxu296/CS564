@@ -7,7 +7,7 @@ WITH NumCategories(ID, Num) as
     FROM Bids
     GROUP BY Bids.ItemID)
 
-SELECT SUM(NumCategories.Num*CombinedBids.Num)
+SELECT SUM(CombinedBids.Num)
 FROM NumCategories, CombinedBids
 WHERE NumCategories.Num = 4 AND NumCategories.ID = CombinedBids.ID;
 
