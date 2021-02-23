@@ -1,0 +1,5 @@
+SELECT ItemID
+FROM Items
+WHERE ItemID
+ORDER BY Currently DESC
+LIMIT 1;
