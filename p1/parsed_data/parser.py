@@ -36,14 +36,14 @@ MONTHS = {'Jan':'01','Feb':'02','Mar':'03','Apr':'04','May':'05','Jun':'06',\
 
 # Table attributes
 ITEM_ID, NAME, CURRENTLY, FIRST_BID, NUMBER_OF_BIDS, BUY_PRICE, SELLER_ID,\
-    ENDS, STARTED, DESCRIPTION, CATEGORY, USER_ID, COUNTRY, LOCATION, RATING,\
-    BID_ID, BIDDER_ID, TIME, AMOUNT = range(19)
+    ENDS, STARTED, ITEM_COUNTRY, ITEM_LOCATION, DESCRIPTION, CATEGORY, USER_ID,\
+    USER_COUNTRY, USER_LOCATION, RATING, BIDDER_ID, TIME, AMOUNT = range(20)
 
 # Table attributes orders
 item_attr_order = [ITEM_ID, NAME, CURRENTLY, FIRST_BID, NUMBER_OF_BIDS, BUY_PRICE,\
-    SELLER_ID, ENDS, STARTED, DESCRIPTION]
+    SELLER_ID, ENDS, STARTED, ITEM_COUNTRY, ITEM_LOCATION, DESCRIPTION]
 category_attr_order = [ITEM_ID, CATEGORY]
-user_attr_order = [USER_ID, COUNTRY, LOCATION, RATING]
+user_attr_order = [USER_ID, USER_COUNTRY, USER_LOCATION, RATING]
 bid_attr_order = [BIDDER_ID, ITEM_ID, TIME, AMOUNT]
 
 """
@@ -133,12 +133,14 @@ def parseJson(json_file):
             item_entry[BUY_PRICE] = transformDollar(item['Buy_Price']) if 'Buy_Price' in item else None
             item_entry[STARTED] = transformDttm(item['Started'])
             item_entry[ENDS] = transformDttm(item['Ends'])
+            item_entry[ITEM_COUNTRY] = item['Country'] if 'Country' in item else None
+            item_entry[ITEM_LOCATION] = item['Location'] if 'Location' in item else None
             item_table.append(item_entry)
             # parse category_table attributes from item
             category_table.extend([{CATEGORY:category, ITEM_ID:item_id} for category in item['Category']])
             # parse user_table and bid_table attributes from item
             user_table.append({USER_ID:item['Seller']['UserID'], RATING:item['Seller']['Rating'],
-                              LOCATION:item['Location'], COUNTRY:item['Country']})
+                               USER_LOCATION:item['Location'], USER_COUNTRY:item['Country']})
             if item['Bids'] is not None:
                 for bid in item['Bids']:
                     bid = bid['Bid']
@@ -148,18 +150,22 @@ def parseJson(json_file):
                     amount = bid_entry[AMOUNT] = transformDollar(bid['Amount'])
                     time = bid_entry[TIME] = transformDttm(bid['Time'])
                     bid_entry[ITEM_ID] = item_id
-                    #bid_entry[BID_ID] = hash('{}{}{}{}'.format(item_id, bidder_id, amount, time))
+                    # bid_entry[BID_ID] = hash('{}{}{}{}'.format(item_id, bidder_id, amount, time))
                     bid_table.append(bid_entry)
-                    user_entry = dict()
+                    user_entry = dict()                  
                     user_entry[USER_ID] = bidder['UserID']
-                    user_entry[LOCATION] = bidder['Location'] if 'Location' in bidder else None
-                    user_entry[COUNTRY] = bidder['Country'] if 'Country' in bidder else None
-                    user_entry[RATING] = bidder['Rating']
+                    user_entry[USER_LOCATION] = bidder['Location'] if 'Location' in bidder else None
+                    user_entry[USER_COUNTRY] = bidder['Country'] if 'Country' in bidder else None
+                    user_entry[RATING] = bidder['Rating']                   
                     user_table.append(user_entry)
     # escape the quotes in user locations
     for user in user_table:
-        if user[LOCATION] is not None:
-            user[LOCATION] = escapeDoubleQuote(user[LOCATION].strip())
+        if user[USER_LOCATION] is not None:
+            user[USER_LOCATION] = escapeDoubleQuote(user[USER_LOCATION].strip())
+    # escape the quotes in item locations
+    for item in item_table:
+        if item[ITEM_LOCATION] is not None:
+            item[ITEM_LOCATION] = escapeDoubleQuote(item[ITEM_LOCATION].strip())
 
     # transform tables into unique, SQL interpretable string arrays
     item_arr = transformTable(item_table, item_attr_order)
