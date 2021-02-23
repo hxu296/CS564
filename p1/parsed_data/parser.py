@@ -156,6 +156,11 @@ def parseJson(json_file):
                     user_entry[COUNTRY] = bidder['Country'] if 'Country' in bidder else None
                     user_entry[RATING] = bidder['Rating']
                     user_table.append(user_entry)
+    # escape the quotes in user locations
+    for user in user_table:
+        if user[LOCATION] is not None:
+            user[LOCATION] = escapeDoubleQuote(user[LOCATION].strip())
+
     # transform tables into unique, SQL interpretable string arrays
     item_arr = transformTable(item_table, item_attr_order)
     category_arr = transformTable(category_table, category_attr_order)
