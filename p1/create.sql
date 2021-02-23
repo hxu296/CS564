@@ -11,7 +11,7 @@ CREATE TABLE Items (
 	First_Bid		DOUBLE,
 	Number_of_Bids	INT		    NOT NULL,
 	Buy_Price		DOUBLE,
-	SellerID		INT		    NOT NULL,
+	SellerID		CHAR(255)   NOT NULL,
 	Ends			Datetime	NOT NULL,
 	Started			Datetime	NOT NULL,
 	Item_Country	    CHAR(255),
