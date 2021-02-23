@@ -37,12 +37,10 @@ CREATE TABLE Users (
 );
 
 CREATE TABLE Bids (
-	BidID		INT		        UNIQUE NOT NULL,
 	BidderID	CHAR(255)	    NOT NULL,
 	ItemID		INT		        NOT NULL,
 	Time		Datetime	    NOT NULL,
 	Amount	DOUBLE	            NOT NULL,
-	PRIMARY KEY (BidID),
 	FOREIGN KEY (BidderID) REFERENCES User (UserID)	
 	FOREIGN KEY (ItemID) REFERENCES Item (ItemID)
 );

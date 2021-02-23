@@ -5,10 +5,8 @@ FILE: skeleton_parser.py
 Author: Firas Abuzaid (fabuzaid@stanford.edu)
 Author: Perth Charernwattanagul (puch@stanford.edu)
 Modified: 04/21/2014
-
 Skeleton parser for CS564 programming project 1. Has useful imports and
 functions for parsing, including:
-
 1) Directory handling -- the parser takes a list of eBay json files
 and opens each file inside of a loop. You just need to fill in the rest.
 2) Dollar value conversions -- the json files store dollar value amounts in
@@ -17,7 +15,6 @@ like XXXXX.xx.
 3) Date/time conversions -- the json files store dates/ times in the form
 Mon-DD-YY HH:MM:SS -- we wrote a function (transformDttm) that converts to the
 for YYYY-MM-DD HH:MM:SS, which will sort chronologically in SQL.
-
 Your job is to implement the parseJson function, which is invoked on each file by
 the main function. We create the initial Python dictionary object of items for
 you; the rest is up to you!
@@ -44,7 +41,7 @@ item_attr_order = [ITEM_ID, NAME, CURRENTLY, FIRST_BID, NUMBER_OF_BIDS, BUY_PRIC
     SELLER_ID, ENDS, STARTED, DESCRIPTION]
 category_attr_order = [ITEM_ID, CATEGORY]
 user_attr_order = [USER_ID, COUNTRY, LOCATION, RATING]
-bid_attr_order = [BID_ID, BIDDER_ID, ITEM_ID, TIME, AMOUNT]
+bid_attr_order = [BIDDER_ID, ITEM_ID, TIME, AMOUNT]
 
 """
 Returns true if a file ends in .json
@@ -148,7 +145,7 @@ def parseJson(json_file):
                     amount = bid_entry[AMOUNT] = transformDollar(bid['Amount'])
                     time = bid_entry[TIME] = transformDttm(bid['Time'])
                     bid_entry[ITEM_ID] = item_id
-                    bid_entry[BID_ID] = hash('{}{}{}{}'.format(item_id, bidder_id, amount, time))
+                    #bid_entry[BID_ID] = hash('{}{}{}{}'.format(item_id, bidder_id, amount, time))
                     bid_table.append(bid_entry)
                     user_entry = dict()
                     user_entry[USER_ID] = bidder['UserID']
