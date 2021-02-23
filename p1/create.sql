@@ -14,7 +14,7 @@ CREATE TABLE Items (
 	SellerID		INT		    NOT NULL,
 	Ends			Datetime	NOT NULL,
 	Started			Datetime	NOT NULL,
-	Description		CHAR(255)	NOT NULL,
+	Description		CHAR(255),
 	PRIMARY KEY (ItemID),
 	FOREIGN KEY (SellerID) REFERENCES User (UserID),
 	FOREIGN KEY (ItemID) REFERENCES Bid (ItemID),
@@ -30,8 +30,8 @@ CREATE TABLE Categories (
 
 CREATE TABLE Users (
 	UserID		CHAR(255)	    UNIQUE NOT NULL,
-	Country	    CHAR(255)	    NOT NULL,
-	Location	CHAR(255)	    NOT NULL,
+	Country	    CHAR(255),
+	Location	CHAR(255),
 	Rating		INT				NOT NULL,
 	PRIMARY KEY (UserID)
 );
