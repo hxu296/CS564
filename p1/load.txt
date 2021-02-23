@@ -1,6 +1,12 @@
 .separator |
 .import items.dat Items
-// update, which ones are NULL
+update Name set Description = null where Description = ‘NULL’;
+update Name set Buy_Price = null where Buy_Price = ‘NULL’;
+
 .import categories.dat Categories
+
 .import users.dat Users
+update Name set Location = null where Location = ‘NULL’;
+update Name set Country = null where Country = ‘NULL’;
+
 .import bids.dat Bids
