@@ -1,5 +1,5 @@
-SELECT ItemID
+SELECT itemID
 FROM Items
-WHERE ItemID
-ORDER BY Currently DESC
+WHERE itemID
+ORDER BY currently DESC
 LIMIT 1;

@@ -1,3 +1,3 @@
-SELECT COUNT(SellerID)
-FROM Items
-WHERE Item_Location LIKE "New York";
+SELECT COUNT(*)
+FROM Users
+WHERE Users.location = 'New York';

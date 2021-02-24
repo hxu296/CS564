@@ -5,44 +5,44 @@ drop table if exists Bids;
 
 
 CREATE TABLE Items (
-    	ItemID			INT		UNIQUE NOT NULL,    --itemID
-	Name			CHAR(255)	NOT NULL, 	    --name
-	Currently		DOUBLE,				    --currently
-	First_Bid		DOUBLE,				    --first_bid
-	Number_of_Bids		INT	 	NOT NULL,	    --bid_count
-	Buy_Price		DOUBLE,				    --buy_price
-	SellerID		CHAR(255)   	NOT NULL,	    --sellerID
-	Ends			Datetime	NOT NULL,	    --ends
-	Started			Datetime	NOT NULL,	    --started
-	Item_Country	    	CHAR(255),			    --country
-	Item_Location		CHAR(255),			    --location
-	Description		CHAR(255),			    --description
-	PRIMARY KEY (ItemID),
-	FOREIGN KEY (SellerID) 	REFERENCES User (UserID),
-	FOREIGN KEY (ItemID) 	REFERENCES Bid (ItemID),
-	FOREIGN KEY (ItemID) 	REFERENCES Category (ItemID)
+    	itemID			INT		UNIQUE NOT NULL,    --itemID
+	name			CHAR(255)	NOT NULL, 	    --name
+	currently		DOUBLE,				    --currently
+	first_bid		DOUBLE,				    --first_bid
+	bid_count		INT	 	NOT NULL,	    --bid_count
+	buy_price		DOUBLE,				    --buy_price
+	sellerID		CHAR(255)   	NOT NULL,	    --sellerID
+	ends			Datetime	NOT NULL,	    --ends
+	started			Datetime	NOT NULL,	    --started
+	country	        	CHAR(255),			    --country
+	location		CHAR(255),			    --location
+	description		CHAR(255),			    --description
+	PRIMARY KEY (itemID)
+	--FOREIGN KEY (sellerID) 	REFERENCES Users (userID),
+	--FOREIGN KEY (itemID) 	REFERENCES Bids (itemID),
+	--FOREIGN KEY (itemID) 	REFERENCES Categories (itemID)
 );
  
 CREATE TABLE Categories (
-	ItemID			INT		NOT NULL,	    --itemID
-	Category		CHAR(255)	NOT NULL,	    --category
-	PRIMARY KEY (ItemID, Category),
-	FOREIGN KEY (ItemID) 	REFERENCES Item (ItemID)
+	itemID			INT		NOT NULL,	    --itemID
+	category		CHAR(255)	NOT NULL,	    --category
+	PRIMARY KEY (itemID, category)
+	--FOREIGN KEY (itemID) 	REFERENCES Items (itemID)
 );
 
 CREATE TABLE Users (
-	UserID			CHAR(255)	UNIQUE NOT NULL,    --userID
-	User_Country	    	CHAR(255),			    --country
-	User_Location		CHAR(255),			    --location
-	Rating			INT		NOT NULL,	    --rating
-	PRIMARY KEY (UserID)
+	userID			CHAR(255)	UNIQUE NOT NULL,    --userID
+	country 	    	CHAR(255),			    --country
+	location		CHAR(255),			    --location
+	rating			INT		NOT NULL,	    --rating
+	PRIMARY KEY (userID)
 );
 
 CREATE TABLE Bids (
-	BidderID		CHAR(255)	NOT NULL,	    --bidderID
-	ItemID			INT		NOT NULL,	    --itemID
-	Time			Datetime	NOT NULL,	    --time
-	Amount			DOUBLE	        NOT NULL,	    --amount
-	FOREIGN KEY (BidderID) 	REFERENCES User (UserID)	
-	FOREIGN KEY (ItemID) 	REFERENCES Item (ItemID)
+	bidderID		CHAR(255)	NOT NULL,	    --bidderID
+	itemID			INT		NOT NULL,	    --itemID
+	time			Datetime	NOT NULL,	    --time
+	amount			DOUBLE	        NOT NULL	    --amount
+	--FOREIGN KEY (bidderID) 	REFERENCES Users (userID)	
+	--FOREIGN KEY (itemID) 	REFERENCES Items (itemID)
 );

@@ -1,4 +1,4 @@
 SELECT COUNT(*)
-FROM (SELECT DISTINCT Items.SellerID
+FROM (SELECT DISTINCT Items.sellerID
       FROM Items, Bids
-      WHERE Items.SellerID = Bids.BidderID);
+      WHERE Items.sellerID = Bids.bidderID);

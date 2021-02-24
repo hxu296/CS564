@@ -1,11 +1,11 @@
 WITH BidGreater(ID, bid) as
-    (SELECT ItemID, Amount
+    (SELECT itemID, amount
     FROM Bids
-    WHERE Amount > 100),
+    WHERE amount > 100),
      CategoriesWithBids(ID, Category) as
     (SELECT Categories.*
      FROM Categories, BidGreater
-     WHERE Categories.ItemID = BidGreater.ID),
+     WHERE Categories.itemID = BidGreater.ID),
      CategoryCount(Category, Cnt) as
     (SELECT Category, COUNT(ID)
      FROM CategoriesWithBids
