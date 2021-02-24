@@ -19,8 +19,6 @@ CREATE TABLE Items (
 	description		CHAR(255),			    --description
 	PRIMARY KEY (itemID)
 	--FOREIGN KEY (sellerID) 	REFERENCES Users (userID),
-	--FOREIGN KEY (itemID) 	REFERENCES Bids (itemID),
-	--FOREIGN KEY (itemID) 	REFERENCES Categories (itemID)
 );
  
 CREATE TABLE Categories (
