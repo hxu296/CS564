@@ -2,8 +2,6 @@
 .import ./ebay_data/item.dat Items
 update Items set description = null where description IS "NULL";
 update Items set buy_price = null where buy_price IS "NULL";
-update Items set location = null where location IS "NULL";
-update Items set country = null where country IS "NULL";
 
 .import ./ebay_data/category.dat Categories
 

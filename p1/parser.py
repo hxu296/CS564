@@ -41,7 +41,7 @@ ITEM_ID, NAME, CURRENTLY, FIRST_BID, NUMBER_OF_BIDS, BUY_PRICE, SELLER_ID,\
 
 # Table attributes orders
 item_attr_order = [ITEM_ID, NAME, CURRENTLY, FIRST_BID, NUMBER_OF_BIDS, BUY_PRICE,\
-    SELLER_ID, ENDS, STARTED, ITEM_COUNTRY, ITEM_LOCATION, DESCRIPTION]
+    SELLER_ID, ENDS, STARTED, DESCRIPTION]
 category_attr_order = [ITEM_ID, CATEGORY]
 user_attr_order = [USER_ID, USER_COUNTRY, USER_LOCATION, RATING]
 bid_attr_order = [BIDDER_ID, ITEM_ID, TIME, AMOUNT]
@@ -133,14 +133,12 @@ def parseJson(json_file):
             item_entry[BUY_PRICE] = transformDollar(item['Buy_Price']) if 'Buy_Price' in item else None
             item_entry[STARTED] = transformDttm(item['Started'])
             item_entry[ENDS] = transformDttm(item['Ends'])
-            item_entry[ITEM_COUNTRY] = item['Country'] if 'Country' in item else None
-            item_entry[ITEM_LOCATION] = item['Location'] if 'Location' in item else None
             item_table.append(item_entry)
             # parse category_table attributes from item
             category_table.extend([{CATEGORY:category, ITEM_ID:item_id} for category in item['Category']])
             # parse user_table and bid_table attributes from item
             user_table.append({USER_ID:item['Seller']['UserID'], RATING:item['Seller']['Rating'],
-                               USER_LOCATION:item['Location'], USER_COUNTRY:item['Country']})
+                               USER_LOCATION:escapeDoubleQuote(item['Location']), USER_COUNTRY:escapeDoubleQuote(item['Country'])})
             if item['Bids'] is not None:
                 for bid in item['Bids']:
                     bid = bid['Bid']
@@ -154,19 +152,10 @@ def parseJson(json_file):
                     bid_table.append(bid_entry)
                     user_entry = dict()                  
                     user_entry[USER_ID] = bidder['UserID']
-                    user_entry[USER_LOCATION] = bidder['Location'] if 'Location' in bidder else None
-                    user_entry[USER_COUNTRY] = bidder['Country'] if 'Country' in bidder else None
+                    user_entry[USER_LOCATION] = escapeDoubleQuote(bidder['Location']) if 'Location' in bidder else None
+                    user_entry[USER_COUNTRY] = escapeDoubleQuote(bidder['Country']) if 'Country' in bidder else None
                     user_entry[RATING] = bidder['Rating']                   
                     user_table.append(user_entry)
-    # escape the quotes in user locations
-    for user in user_table:
-        if user[USER_LOCATION] is not None:
-            user[USER_LOCATION] = escapeDoubleQuote(user[USER_LOCATION].strip())
-    # escape the quotes in item locations
-    for item in item_table:
-        if item[ITEM_LOCATION] is not None:
-            item[ITEM_LOCATION] = escapeDoubleQuote(item[ITEM_LOCATION].strip())
-
     # transform tables into unique, SQL interpretable string arrays
     item_arr = transformTable(item_table, item_attr_order)
     category_arr = transformTable(category_table, category_attr_order)

@@ -5,42 +5,40 @@ drop table if exists Bids;
 
 
 CREATE TABLE Items (
-    	itemID			INT		UNIQUE NOT NULL,    --itemID
-	name			CHAR(255)	NOT NULL, 	    --name
-	currently		DOUBLE,				    --currently
-	first_bid		DOUBLE,				    --first_bid
-	bid_count		INT	 	NOT NULL,	    --bid_count
-	buy_price		DOUBLE,				    --buy_price
-	sellerID		CHAR(255)   	NOT NULL,	    --sellerID
-	ends			Datetime	NOT NULL,	    --ends
-	started			Datetime	NOT NULL,	    --started
-	country	        	CHAR(255),			    --country
-	location		CHAR(255),			    --location
-	description		CHAR(255),			    --description
-	PRIMARY KEY (itemID)
-	--FOREIGN KEY (sellerID) 	REFERENCES Users (userID),
+    itemID			INT		    UNIQUE NOT NULL,
+	name			CHAR(255)	NOT NULL, 	  
+	currently		DOUBLE,				 
+	first_bid		DOUBLE,				
+	bid_count		INT	 	    NOT NULL,
+	buy_price		DOUBLE,				   
+	sellerID		CHAR(255)   NOT NULL,
+	ends			Datetime	NOT NULL,	 
+	started			Datetime	NOT NULL,	
+	description		CHAR(255),			  
+	PRIMARY KEY (itemID),
+	FOREIGN KEY (sellerID) 	    REFERENCES Users (userID)
 );
  
 CREATE TABLE Categories (
-	itemID			INT		NOT NULL,	    --itemID
-	category		CHAR(255)	NOT NULL,	    --category
-	PRIMARY KEY (itemID, category)
-	--FOREIGN KEY (itemID) 	REFERENCES Items (itemID)
+	itemID			INT		    NOT NULL,
+	category		CHAR(255)	NOT NULL,	
+	PRIMARY KEY (itemID, category),
+	FOREIGN KEY (itemID) 	    REFERENCES Items (itemID)
 );
 
 CREATE TABLE Users (
-	userID			CHAR(255)	UNIQUE NOT NULL,    --userID
-	country 	    	CHAR(255),			    --country
-	location		CHAR(255),			    --location
-	rating			INT		NOT NULL,	    --rating
+	userID			CHAR(255)   UNIQUE NOT NULL,
+	country 	    CHAR(255),
+	location		CHAR(255),	
+	rating			INT		    NOT NULL,
 	PRIMARY KEY (userID)
 );
 
 CREATE TABLE Bids (
-	bidderID		CHAR(255)	NOT NULL,	    --bidderID
-	itemID			INT		NOT NULL,	    --itemID
-	time			Datetime	NOT NULL,	    --time
-	amount			DOUBLE	        NOT NULL	    --amount
-	--FOREIGN KEY (bidderID) 	REFERENCES Users (userID)	
-	--FOREIGN KEY (itemID) 	REFERENCES Items (itemID)
+	bidderID		CHAR(255)	NOT NULL,	 
+	itemID			INT		    NOT NULL,
+	time			Datetime	NOT NULL,
+	amount			DOUBLE	    NOT NULL,
+	FOREIGN KEY (bidderID) 	    REFERENCES Users (userID),
+	FOREIGN KEY (itemID) 	    REFERENCES Items (itemID)
 );
