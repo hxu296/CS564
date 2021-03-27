@@ -1,5 +1,0 @@
-SELECT itemID
-FROM Items
-WHERE itemID
-ORDER BY currently DESC
-LIMIT 1;
