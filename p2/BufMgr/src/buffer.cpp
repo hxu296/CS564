@@ -74,11 +74,11 @@ void BufMgr::unPinPage(File* file, const PageId pageNo, const bool dirty)
 	// Does nothing if page is not found in the hash table lookup.
 
 	// use hash table lookup to find the frame number of specified page in given file
-	FrameId	frameNo = NULL;
+	FrameId	frameNo = UINT32_MAX; // not sure for the initial value
 	hashTable->lookup(file, pageNo, frameNo); // address of??
 
 	// do nothing if not found
-	if (frameNo == NULL) return;
+	if (frameNo == UINT32_MAX) return;
 
 	// Throws PAGENOTPINNED if the pin count is already 0
 	if (bufDescTable[frameNo].pinCnt == 0) {
