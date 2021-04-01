@@ -107,7 +107,7 @@ void BufMgr::flushFile(const File* file)
 			// to flush the page to disk and then set the dirty bit for the page to false
 			if (bufDescTable[i].dirty == true) {
 				Page p = bufPool[bufDescTable[i].frameNo];
-				file->writePage(p); // do not know why not work
+				bufDescTable[i].file->writePage(p);
 				bufDescTable[i].dirty == false;
 			}
 			// (b) remove the page from the hashtable (whether the page is clean or dirty)
