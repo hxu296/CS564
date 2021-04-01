@@ -96,6 +96,25 @@ void BufMgr::unPinPage(File* file, const PageId pageNo, const bool dirty)
 
 void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page) 
 {
+	// The first step in this method is to allocate an empty page in the 
+	// specified file by invoking the file->allocatePage() method.
+	// This method will return a newly allocated page.
+	// The method returns both the page number of the newly allocated page 
+	// to the caller via the pageNo parameter and a pointer to the buffer frame allocated 
+	// for the page via the page parameter.
+	page = &(file->allocatePage());
+	pageNo = page->page_number();
+	 
+	// Then allocBuf() is called to obtain a buffer pool frame.
+	FrameId	frameNo = UINT32_MAX; // not sure for the initial value??
+	hashTable->lookup(file, pageNo, frameNo); // address of??
+	// do nothing if not found
+	if (frameNo == UINT32_MAX) return; 
+	allocBuf(frameNo);
+
+	// Next, an entry is inserted into the hash table and Set() is invoked on the frame to set it up properly. 
+	hashTable->insert(file, pageNo, frameNo);
+	bufDescTable[frameNo].Set(file, pageNo);
 }
 
 void BufMgr::flushFile(const File* file) 
