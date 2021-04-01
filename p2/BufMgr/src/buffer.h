@@ -83,12 +83,12 @@ class BufDesc {
   void Set(File* filePtr, PageId pageNum)
 	{ 
 		file = filePtr;
-    pageNo = pageNum;
-    pinCnt = 1;
-    dirty = false;
-    valid = true;
-    refbit = true;
-  }
+		pageNo = pageNum;
+		pinCnt = 1;
+		dirty = false;
+		valid = true;
+		refbit = true;
+	}
 
   void Print()
 	{

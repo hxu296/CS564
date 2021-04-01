@@ -47,7 +47,7 @@ BufMgr::~BufMgr()
 	// deallocates the buffer pool and the BufDesc table, call destructor
 	delete hashTable; // deallocate the buffer hash table
 	bufPool = NULL; // ?
-	bufDescTable = NULL;
+	bufDescTable = NULL; // ?
 }
 
 void BufMgr::advanceClock()
@@ -58,6 +58,7 @@ void BufMgr::advanceClock()
 
 void BufMgr::allocBuf(FrameId & frame) 
 {
+	// Throws BufferExceededException if all buffer frames are pinned.
 }
 
 	
@@ -68,6 +69,28 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
 
 void BufMgr::unPinPage(File* file, const PageId pageNo, const bool dirty) 
 {
+	// Decrements the pinCnt of the frame containing (file, PageNo) and, if dirty == true, 
+	// sets the dirty bit. Throws PAGENOTPINNED if the pin count is already 0. 
+	// Does nothing if page is not found in the hash table lookup.
+
+	// use hash table lookup to find the frame number of specified page in given file
+	FrameId	frameNo = NULL;
+	hashTable->lookup(file, pageNo, frameNo); // address of??
+
+	// do nothing if not found
+	if (frameNo == NULL) return;
+
+	// Throws PAGENOTPINNED if the pin count is already 0
+	if (bufDescTable[frameNo].pinCnt == 0) {
+		throw PageNotPinnedException(file->filename(), pageNo, frameNo);
+	}
+	else {
+		// Decrements the pinCnt
+		bufDescTable[frameNo].pinCnt--;
+		if (dirty == true) {
+			bufDescTable[frameNo].dirty = true;
+		}
+	}
 }
 
 void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page) 
