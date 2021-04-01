@@ -48,7 +48,7 @@ int main()
 	{
     File::remove(filename);
   }
-	catch(const FileNotFoundException &)
+	catch(const FileNotFoundException &e)
 	{
   }
 

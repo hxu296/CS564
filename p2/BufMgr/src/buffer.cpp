@@ -65,8 +65,36 @@ void BufMgr::allocBuf(FrameId & frame)
 	
 void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
 {
+	// First check whether the page is already in the buffer pool by invoking 
+	// the lookup() method, which may throw HashNotFoundException when page is not in the buffer pool, 
+	// on the hashtable to get a frame number.
+	bool found = true; // if the page is found
+	FrameId	frameNo;
+	try {
+		hashTable->lookup(file, pageNo, frameNo); // address of??
+	}
+	catch (const HashNotFoundException &e) {
+		found = false; // throw exception when page is not in the buffer pool
+	}
+	
+	// if not found
+	if (!found) {
+		// Call allocBuf() to allocate a buffer frame 
+		// and then call the method file->readPage() to read the page from disk into the buffer pool frame. 
+		// Next, insert the page into the hashtable. Finally, invoke Set() on the frame to set it up properly.
+		// Return a pointer to the frame containing the page via the page parameter.
+		PageId new_page_no;
+		allocPage(file, new_page_no, page);
+		file->readPage(new_page_no);
+	}
+	else {
+		// In this case set the appropriate refbit, increment the pinCnt for the page, 
+		// and then return a pointer to the frame containing the page via the page parameter.
+		bufDescTable[frameNo].refbit = true;
+		bufDescTable[frameNo].pinCnt++;
+		page = &(bufPool[frameNo]);
+	}
 }
-
 
 void BufMgr::unPinPage(File* file, const PageId pageNo, const bool dirty) 
 {
@@ -75,11 +103,17 @@ void BufMgr::unPinPage(File* file, const PageId pageNo, const bool dirty)
 	// Does nothing if page is not found in the hash table lookup.
 
 	// use hash table lookup to find the frame number of specified page in given file
-	FrameId	frameNo = UINT32_MAX; // not sure for the initial value??
-	hashTable->lookup(file, pageNo, frameNo); // address of??
+	bool found = true; // if the page is found
+	FrameId	frameNo;
+	try {
+		hashTable->lookup(file, pageNo, frameNo); // address of??
+	}
+	catch (const HashNotFoundException &e) {
+		found = false; // throw exception when page is not in the buffer pool
+	}
 
 	// do nothing if not found
-	if (frameNo == UINT32_MAX) return;
+	if (!found) return;
 
 	// Throws PAGENOTPINNED if the pin count is already 0
 	if (bufDescTable[frameNo].pinCnt == 0) {
@@ -106,10 +140,16 @@ void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page)
 	pageNo = page->page_number();
 	 
 	// Then allocBuf() is called to obtain a buffer pool frame.
-	FrameId	frameNo = UINT32_MAX; // not sure for the initial value??
-	hashTable->lookup(file, pageNo, frameNo); // address of??
+	bool found = true; // if the page is found
+	FrameId	frameNo;
+	try {
+		hashTable->lookup(file, pageNo, frameNo); // address of??
+	}
+	catch (const HashNotFoundException &e) {
+		found = false; // throw exception when page is not in the buffer pool
+	}
 	// do nothing if not found
-	if (frameNo == UINT32_MAX) return; 
+	if (!found) return; 
 	allocBuf(frameNo);
 
 	// Next, an entry is inserted into the hash table and Set() is invoked on the frame to set it up properly. 
@@ -151,11 +191,17 @@ void BufMgr::disposePage(File* file, const PageId PageNo)
 	// it makes sure that if the page to be deleted is allocated a frame in the buffer pool, 
 
 	// use hash table lookup to find the frame number of specified page in given file
-	FrameId	frameNo = UINT32_MAX; // not sure for the initial value??
-	hashTable->lookup(file, PageNo, frameNo); // address of??
+	bool found = true; // if the page is found
+	FrameId	frameNo;
+	try {
+		hashTable->lookup(file, PageNo, frameNo); // address of??
+	}
+	catch (const HashNotFoundException &e) {
+		found = false; // throw exception when page is not in the buffer pool
+	}
 
 	// do nothing if not found
-	if (frameNo == UINT32_MAX) return;
+	if (!found) return;
 
 	// that frame is freed and corresponding entry from hash table is also removed.
 	bufDescTable[frameNo].Clear();
