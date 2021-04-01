@@ -101,13 +101,30 @@ void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page)
 void BufMgr::flushFile(const File* file) 
 {
 	//Should scan bufTable for pages belonging to the file. 
-	//For each page encountered it should: (a) if the page is dirty, call file->writePage() 
-	//to flush the page to disk and then set the dirty bit for the page to false, 
-	//(b) remove the page from the hashtable (whether the page is clean or dirty) and 
-	//(c) invoke the Clear() method of BufDesc for the page frame.
-	//Throws PagePinnedException if some page of the file is pinned. 
-	//Throws BadBuffer- Exception if an invalid page belonging to the file is encountered.
+	for (FrameId i = 0; i < numBufs; i++) {
+		if (bufDescTable[i].file == file) { // page belongs to the file
+			// (a) if the page is dirty, call file->writePage() 
+			// to flush the page to disk and then set the dirty bit for the page to false
+			if (bufDescTable[i].dirty == true) {
+				Page p = bufPool[bufDescTable[i].frameNo];
+				file->writePage(p); // do not know why not work
+				bufDescTable[i].dirty == false;
+			}
+			// (b) remove the page from the hashtable (whether the page is clean or dirty)
+			hashTable->remove(file, bufDescTable[i].pageNo);
+			// (c) invoke the Clear() method of BufDesc for the page frame.
+			bufDescTable[i].Clear();
 
+			// Throws PagePinnedException if some page of the file is pinned 
+			if (bufDescTable[i].pinCnt != 0) {
+				throw PagePinnedException(file->filename(), bufDescTable[i].pageNo, bufDescTable[i].frameNo);
+			}
+			// Throws BadBuffer- Exception if an invalid page belonging to the file is encountered
+			if (bufDescTable[i].valid == false) {
+				throw BadBufferException(bufDescTable[i].frameNo, bufDescTable[i].dirty, bufDescTable[i].valid, bufDescTable[i].refbit);
+			}
+		}
+  	}
 }
 
 void BufMgr::disposePage(File* file, const PageId PageNo)
