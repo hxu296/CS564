@@ -42,7 +42,9 @@ BufMgr::BufMgr(std::uint32_t bufs)
 BufMgr::~BufMgr() 
 {
 	// Flushes out all dirty pages
-	flushFile(bufDescTable[0].file); // 几个FILE? 可以用index 0吗？
+	for (FrameId i = 0; i < numBufs; i++) {
+		flushFile(bufDescTable[i].file);
+  	}
 
 	// deallocates the buffer pool and the BufDesc table, call destructor
 	delete hashTable; // deallocate the buffer hash table
@@ -58,7 +60,6 @@ void BufMgr::advanceClock()
 
 void BufMgr::allocBuf(FrameId & frame) 
 {
-	// Throws BufferExceededException if all buffer frames are pinned.
 }
 
 	
@@ -74,7 +75,7 @@ void BufMgr::unPinPage(File* file, const PageId pageNo, const bool dirty)
 	// Does nothing if page is not found in the hash table lookup.
 
 	// use hash table lookup to find the frame number of specified page in given file
-	FrameId	frameNo = UINT32_MAX; // not sure for the initial value
+	FrameId	frameNo = UINT32_MAX; // not sure for the initial value??
 	hashTable->lookup(file, pageNo, frameNo); // address of??
 
 	// do nothing if not found
@@ -99,6 +100,14 @@ void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page)
 
 void BufMgr::flushFile(const File* file) 
 {
+	//Should scan bufTable for pages belonging to the file. 
+	//For each page encountered it should: (a) if the page is dirty, call file->writePage() 
+	//to flush the page to disk and then set the dirty bit for the page to false, 
+	//(b) remove the page from the hashtable (whether the page is clean or dirty) and 
+	//(c) invoke the Clear() method of BufDesc for the page frame.
+	//Throws PagePinnedException if some page of the file is pinned. 
+	//Throws BadBuffer- Exception if an invalid page belonging to the file is encountered.
+
 }
 
 void BufMgr::disposePage(File* file, const PageId PageNo)
