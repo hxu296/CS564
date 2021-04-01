@@ -81,8 +81,8 @@ class BufDesc {
 	 * @param pageNum	Page number in the file
 	 */
   void Set(File* filePtr, PageId pageNum)
-	{ 
-		file = filePtr;
+	{
+      file = filePtr;
     pageNo = pageNum;
     pinCnt = 1;
     dirty = false;
