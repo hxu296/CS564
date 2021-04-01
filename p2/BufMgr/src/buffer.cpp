@@ -42,7 +42,7 @@ BufMgr::BufMgr(std::uint32_t bufs)
 BufMgr::~BufMgr() {
 	// Flushes out all dirty pages
 	flushFile(bufDescTable[0].file); // 几个FILE? 可以用index 0吗？
-	
+
 	// deallocates the buffer pool and the BufDesc table, call destructor
 	delete hashTable; // deallocate the buffer hash table
 	bufPool = NULL; // ?
@@ -51,6 +51,8 @@ BufMgr::~BufMgr() {
 
 void BufMgr::advanceClock()
 {
+	// Advances clock to the next frame in the buffer pool.
+	clockHand = (clockHand + 1) % numBufs;
 }
 
 void BufMgr::allocBuf(FrameId & frame) 
