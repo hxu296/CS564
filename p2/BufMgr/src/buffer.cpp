@@ -39,7 +39,8 @@ BufMgr::BufMgr(std::uint32_t bufs)
 }
 
 
-BufMgr::~BufMgr() {
+BufMgr::~BufMgr() 
+{
 	// Flushes out all dirty pages
 	flushFile(bufDescTable[0].file); // 几个FILE? 可以用index 0吗？
 
