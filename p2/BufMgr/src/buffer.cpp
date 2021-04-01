@@ -129,6 +129,19 @@ void BufMgr::flushFile(const File* file)
 
 void BufMgr::disposePage(File* file, const PageId PageNo)
 {
+	// This method deletes a particular page from file. Before deleting the page from file, 
+	// it makes sure that if the page to be deleted is allocated a frame in the buffer pool, 
+
+	// use hash table lookup to find the frame number of specified page in given file
+	FrameId	frameNo = UINT32_MAX; // not sure for the initial value??
+	hashTable->lookup(file, PageNo, frameNo); // address of??
+
+	// do nothing if not found
+	if (frameNo == UINT32_MAX) return;
+
+	// that frame is freed and corresponding entry from hash table is also removed.
+	bufDescTable[frameNo].Clear();
+	hashTable->remove(file, PageNo);
 }
 
 void BufMgr::printSelf(void) 
