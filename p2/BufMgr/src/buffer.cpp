@@ -131,16 +131,18 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
 		// and then call the method file->readPage() to read the page from disk into the buffer pool frame. 
 		// Next, insert the page into the hashtable. Finally, invoke Set() on the frame to set it up properly.
 		// Return a pointer to the frame containing the page via the page parameter.
-		PageId new_page_no;
-		allocPage(file, new_page_no, page);
-		file->readPage(new_page_no);
+		allocBuf(frameNo);
+		bufPool[frameNo] = file->readPage(pageNo);
+        hashTable->insert(file, pageNo, frameNo);
+        bufDescTable[frameNo].Set(file, pageNo);
+        page = bufPool + frameNo;
 	}
 	else {
 		// In this case set the appropriate refbit, increment the pinCnt for the page, 
 		// and then return a pointer to the frame containing the page via the page parameter.
 		bufDescTable[frameNo].refbit = true;
 		bufDescTable[frameNo].pinCnt++;
-		page = &(bufPool[frameNo]);
+		page = bufPool + frameNo;
 	}
 }
 
