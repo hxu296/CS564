@@ -60,6 +60,54 @@ void BufMgr::advanceClock()
 
 void BufMgr::allocBuf(FrameId & frame) 
 {
+    // Allocates a free frame using the clock algorithm;
+    // Throws BufferExceededException if all buffer frames are pinned.
+    // This private method will get called by the readPage() and allocPage() methods.
+    // Makesure that if the buffer frame allocated has a valid page in it,
+    // you remove the appropriate entry from the hash table.
+    advanceClock();
+    FrameID startID = clockHand; // start frame
+    int numPinned = 0; // number of frames that are pinned
+    while(true){
+        if (bufDescTable[clockHand].valid){
+            // valid is set
+            if (bufDescTable[clockHand].refbit){
+                // refbit is set, clear the refbit and continue.
+                bufDescTable[clockHand].refbit = false;
+                continue;
+            }
+            else{
+                if (bufDescTable[clockHand].pinCnt > 0){
+                    // refbit is not set but frame is pinned.
+                    if(numPinned == numBufs && startID == clockHand)
+                        throw BufferExceededException(); // all frames are pinned
+                     else{
+                         numPinned++;
+                         continue;
+                     }
+                }
+                else{
+                    // refbit is not set and the frame is not pinned, use this frame.
+                    if(bufDescTable[clockHand].dirty){
+                        // dirty page is set, flush page to disk
+                        bufDescTable[clockHand].file->writePage(bufPool[bufDescTable[clockHand].frameNo]);
+                        bufDescTable[clockHand].dirty = false;
+                    }
+                    frame = clockHand;
+                    // remove the page from the hashtable
+                    hashTable->remove(bufDescTable[clockHand].file, bufDescTable[clockHand].pageNo);
+                    // invoke the Clear() method of BufDesc for the page frame.
+                    bufDescTable[clockHand].Clear();
+                    return;
+                }
+            }
+        } else{
+            // valid is not set for the current frame, use this frame
+            frame = clockHand;
+            return;
+        }
+        advanceClock();
+    }
 }
 
 	
@@ -122,7 +170,7 @@ void BufMgr::unPinPage(File* file, const PageId pageNo, const bool dirty)
 	else {
 		// Decrements the pinCnt
 		bufDescTable[frameNo].pinCnt--;
-		if (dirty == true) {
+		if (dirty) {
 			bufDescTable[frameNo].dirty = true;
 		}
 	}
@@ -159,14 +207,14 @@ void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page)
 
 void BufMgr::flushFile(const File* file) 
 {
-	//Should scan bufTable for pages belonging to the file. 
+	// Should scan bufTable for pages belonging to the file.
 	for (FrameId i = 0; i < numBufs; i++) {
 		if (bufDescTable[i].file == file) { // page belongs to the file
 			// (a) if the page is dirty, call file->writePage() 
 			// to flush the page to disk and then set the dirty bit for the page to false
-			if (bufDescTable[i].dirty == true) {
+			if (bufDescTable[i].dirty) {
 				bufDescTable[i].file->writePage(bufPool[bufDescTable[i].frameNo]);
-				bufDescTable[i].dirty == false;
+				bufDescTable[i].dirty = false;
 			}
 			// (b) remove the page from the hashtable (whether the page is clean or dirty)
 			hashTable->remove(file, bufDescTable[i].pageNo);
@@ -178,7 +226,7 @@ void BufMgr::flushFile(const File* file)
 				throw PagePinnedException(file->filename(), bufDescTable[i].pageNo, bufDescTable[i].frameNo);
 			}
 			// Throws BadBuffer- Exception if an invalid page belonging to the file is encountered
-			if (bufDescTable[i].valid == false) {
+			if (!bufDescTable[i].valid) {
 				throw BadBufferException(bufDescTable[i].frameNo, bufDescTable[i].dirty, bufDescTable[i].valid, bufDescTable[i].refbit);
 			}
 		}
@@ -219,7 +267,7 @@ void BufMgr::printSelf(void)
 		std::cout << "FrameNo:" << i << " ";
 		tmpbuf->Print();
 
-  	if (tmpbuf->valid == true)
+  	if (tmpbuf->valid)
     	validFrames++;
   }
 
