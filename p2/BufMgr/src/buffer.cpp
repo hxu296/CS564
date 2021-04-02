@@ -184,22 +184,15 @@ void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page)
 	// The method returns both the page number of the newly allocated page 
 	// to the caller via the pageNo parameter and a pointer to the buffer frame allocated 
 	// for the page via the page parameter.
-	Page new_page = file->allocatePage();
-	page = &new_page;
-	pageNo = page->page_number();
-	 
-	// Then allocBuf() is called to obtain a buffer pool frame.
-	bool found = true; // if the page is found
+
+	// AllocBuf() is called to obtain a buffer pool frame.
 	FrameId	frameNo;
-	try {
-		hashTable->lookup(file, pageNo, frameNo); // address of??
-	}
-	catch (const HashNotFoundException &e) {
-		found = false; // throw exception when page is not in the buffer pool
-	}
-	// do nothing if not found
-	if (!found) return; 
 	allocBuf(frameNo);
+
+	// Assign new page into that newly allocated page frame
+    bufPool[frameNo] = file->allocatePage();
+    page = &bufPool[frameNo];
+    pageNo = page->page_number();
 
 	// Next, an entry is inserted into the hash table and Set() is invoked on the frame to set it up properly. 
 	hashTable->insert(file, pageNo, frameNo);
