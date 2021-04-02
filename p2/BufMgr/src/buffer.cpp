@@ -66,8 +66,8 @@ void BufMgr::allocBuf(FrameId & frame)
     // Makesure that if the buffer frame allocated has a valid page in it,
     // you remove the appropriate entry from the hash table.
     advanceClock();
-    FrameID startID = clockHand; // start frame
-    int numPinned = 0; // number of frames that are pinned
+    FrameId startID = clockHand; // start frame
+    uint32_t numPinned = 0; // number of frames that are pinned
     while(true){
         if (bufDescTable[clockHand].valid){
             // valid is set
