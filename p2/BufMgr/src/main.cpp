@@ -28,7 +28,7 @@ RecordId rid[num], rid2, rid3;
 Page *page, *page2, *page3;
 char tmpbuf[100];
 BufMgr* bufMgr;
-File *file1ptr, *file2ptr, *file3ptr, *file4ptr, *file5ptr;
+File *file1ptr, *file2ptr, *file3ptr, *file4ptr, *file5ptr, *file6ptr;
 
 void test1();
 void test2();
@@ -114,6 +114,7 @@ void testBufMgr()
   const std::string& filename3 = "test.3";
   const std::string& filename4 = "test.4";
   const std::string& filename5 = "test.5";
+  const std::string& filename6 = "test.6";
 
   try
 	{
@@ -122,6 +123,7 @@ void testBufMgr()
     File::remove(filename3);
     File::remove(filename4);
     File::remove(filename5);
+	File::remove(filename6);
   }
 	catch(const FileNotFoundException &e)
 	{
@@ -132,12 +134,14 @@ void testBufMgr()
 	File file3 = File::create(filename3);
 	File file4 = File::create(filename4);
 	File file5 = File::create(filename5);
+	File file6 = File::create(filename6);
 
 	file1ptr = &file1;
 	file2ptr = &file2;
 	file3ptr = &file3;
 	file4ptr = &file4;
 	file5ptr = &file5;
+	file6ptr = &file6;
 
 	//Test buffer manager
 	//Comment tests which you do not wish to run now. Tests are dependent on their preceding tests. So, they have to be run in the following order. 
@@ -155,6 +159,7 @@ void testBufMgr()
 	file3.~File();
 	file4.~File();
 	file5.~File();
+	file6.~File();
 
 	//Delete files
 	File::remove(filename1);
@@ -162,6 +167,7 @@ void testBufMgr()
 	File::remove(filename3);
 	File::remove(filename4);
 	File::remove(filename5);
+	File::remove(filename6);
 
 	delete bufMgr;
 
@@ -205,7 +211,7 @@ void test2()
 		rid2 = page2->insertRecord(tmpbuf);
 
 		long int index = random() % num;
-    pageno1 = pid[index];
+    	pageno1 = pid[index];
 		bufMgr->readPage(file1ptr, pageno1, page);
 		sprintf((char*)tmpbuf, "test.1 Page %u %7.1f", pageno1, (float)pageno1);
 		if(strncmp(page->getRecord(rid[index]).c_str(), tmpbuf, strlen(tmpbuf)) != 0)
