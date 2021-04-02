@@ -184,7 +184,8 @@ void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page)
 	// The method returns both the page number of the newly allocated page 
 	// to the caller via the pageNo parameter and a pointer to the buffer frame allocated 
 	// for the page via the page parameter.
-	page = &(file->allocatePage());
+	Page new_page = file->allocatePage();
+	page = &new_page;
 	pageNo = page->page_number();
 	 
 	// Then allocBuf() is called to obtain a buffer pool frame.
