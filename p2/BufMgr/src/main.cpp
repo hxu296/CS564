@@ -36,6 +36,7 @@ void test3();
 void test4();
 void test5();
 void test6();
+void test7();
 void testBufMgr();
 
 int main() 
@@ -152,6 +153,7 @@ void testBufMgr()
 	test4();
 	test5();
 	test6();
+    test7();
 
 	//Close files before deleting them
 	file1.~File();
@@ -319,10 +321,50 @@ void test6()
 	{
 	}
 
-	for (i = 1; i <= num; i++) 
+	for (i = 1; i <= num; i++)
 		bufMgr->unPinPage(file1ptr, i, true);
 
 	bufMgr->flushFile(file1ptr);
 
     std::cout << "Test 6 passed" << "\n";
+}
+
+void test7()
+{
+    //allocating pages
+    for (i = 0; i < num; i++)
+    {
+        bufMgr->allocPage(file1ptr, pid[i], page);
+        sprintf((char*)tmpbuf, "test.7 Page %u %7.1f", pid[i], (float)pid[i]);
+        rid[i] = page->insertRecord(tmpbuf);
+        //bufMgr->unPinPage(file1ptr, pid[i], true);
+    }
+    std::cout << "--------Info after allocating pages--------" << "\n";
+    bufMgr->printSelf();
+    std::cout << "\n" << "---------------------------------------" << "\n";
+
+    //Reading pages back...
+    for (i = 0; i < num; i++)
+    {
+        bufMgr->readPage(file1ptr, pid[i], page);
+        sprintf((char*)&tmpbuf, "test.7 Page %u %7.1f", pid[i], (float)pid[i]);
+        if(strncmp(page->getRecord(rid[i]).c_str(), tmpbuf, strlen(tmpbuf)) != 0)
+        {
+            PRINT_ERROR("ERROR :: CONTENTS DID NOT MATCH");
+        }
+        //bufMgr->unPinPage(file1ptr, pid[i], false);
+    }
+    std::cout << "--------Info after reading pages--------" << "\n";
+    bufMgr->printSelf();
+    std::cout << "\n" << "---------------------------------------" << "\n";
+
+    for (i = 0; i < num; i++)
+    {
+        bufMgr->disposePage(file1ptr, pid[i]);
+    }
+    std::cout << "--------Info after disposing pages--------" << "\n";
+    bufMgr->printSelf();
+    std::cout << "\n" << "---------------------------------------" << "\n";
+
+    std::cout<< "Test 7 passed" << "\n";
 }
