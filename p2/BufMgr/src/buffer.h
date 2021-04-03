@@ -198,6 +198,15 @@ class BufMgr
 	 */
   void allocBuf(FrameId & frame);
 
+    /**
+    * Lookup frameNo according to file and pageNo. Return true if a correspondence exists, false otherwise.
+    * @param file Part of key for finding the frameNo.
+    * @param pageNo Part of key for finding the frameNo.
+    * @param frameNo FrameId to assign.
+    * @return True if file and pageNo corresponds to a frameNo in hashtable, false otherwise.
+    */
+  bool findFrameNo(File* file, const PageId pageNo, FrameId& frameNo);
+
  public:
 	/**
    * Actual buffer pool from which frames are allocated
@@ -261,9 +270,9 @@ class BufMgr
 	 * Since the page is entirely deleted from file, its unnecessary to see if the page is dirty.
 	 *
 	 * @param file   	File object
-	 * @param PageNo  Page number
+	 * @param pageNo  Page number
 	 */
-  void disposePage(File* file, const PageId PageNo);
+  void disposePage(File* file, const PageId pageNo);
 
 	/**
    * Print member variable values. 
