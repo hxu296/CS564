@@ -224,15 +224,13 @@ void BufMgr::disposePage(File* file, const PageId PageNo)
 		found = false;
 	}
 
-	// todo: don't need to delete page if not found?
 	// do nothing if not found
 	if (!found) return;
 
 	// free frame and remove entry from hash table.
 	bufDescTable[frameNo].Clear();
 	hashTable->remove(file, PageNo);
-
-	// todo: what if the page is dirty? don't need to flush it before deletion?
+	
 	// delete page from file
     file->deletePage(PageNo);
 }
