@@ -1,4 +1,9 @@
 /**
+ * Huan Xu, hxu296
+ * Jing Zhang, jzhang999
+ *
+ * Provides implementations of the BufMgr class.
+ *
  * @author See Contributors.txt for code contributors and overview of BadgerDB.
  *
  * @section LICENSE

@@ -1,3 +1,10 @@
+/**
+ * Huan Xu, hxu296
+ * Jing Zhang, jzhang999
+ *
+ * Tests the implementation of the BufMgr class.
+ */
+
 #include <iostream>
 #include <stdlib.h>
 //#include <stdio.h>

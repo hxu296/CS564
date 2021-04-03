@@ -1,8 +1,14 @@
 /**
+ * Huan Xu, hxu296
+ * Jing Zhang, jzhang999
+ *
+ * Header file for buffer.cpp. Provides the functional interface for the BufMgr class.
+ *
  * @author See Contributors.txt for code contributors and overview of BadgerDB.
  *
  * @section LICENSE
  * Copyright (c) 2012 Database Group, Computer Sciences Department, University of Wisconsin-Madison.
+ *
  */
 
 #pragma once
