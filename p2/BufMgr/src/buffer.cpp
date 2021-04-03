@@ -45,7 +45,8 @@ BufMgr::~BufMgr()
 	for (FrameId i = 0; i < numBufs; i++) {
         bufDescTable[i].pinCnt = 0;
 		if (bufDescTable[i].valid && bufDescTable[i].dirty) {
-            flushFile(bufDescTable[i].file);
+            bufDescTable[i].file->writePage(bufPool[bufDescTable[i].frameNo]);
+            bufDescTable[i].dirty = false;
         }
   	}
 
@@ -69,18 +70,22 @@ void BufMgr::allocBuf(FrameId & frame)
     while(true){
         if (bufDescTable[clockHand].valid){
             // valid is set
+            // increase pin count if page is pinned
+            if(bufDescTable[clockHand].pinCnt > 0)
+                numPinned++;
             if (bufDescTable[clockHand].refbit){
                 // refbit is set, clear the refbit and continue.
                 bufDescTable[clockHand].refbit = false;
+                advanceClock();
                 continue;
             }
             else{
                 if (bufDescTable[clockHand].pinCnt > 0){
                     // refbit is not set but frame is pinned.
-                    if(numPinned == numBufs && startID == clockHand)
+                    if(numPinned == numBufs + 1 && startID == clockHand)
                         throw BufferExceededException(); // all frames are pinned
                      else{
-                         numPinned++;
+                         advanceClock();
                          continue;
                      }
                 }
@@ -91,11 +96,11 @@ void BufMgr::allocBuf(FrameId & frame)
                         bufDescTable[clockHand].file->writePage(bufPool[bufDescTable[clockHand].frameNo]);
                         bufDescTable[clockHand].dirty = false;
                     }
-                    frame = clockHand;
                     // remove the page from the hashtable
                     hashTable->remove(bufDescTable[clockHand].file, bufDescTable[clockHand].pageNo);
                     // invoke the Clear() method of BufDesc for the page frame.
                     bufDescTable[clockHand].Clear();
+                    frame = clockHand;
                     return;
                 }
             }
@@ -104,7 +109,6 @@ void BufMgr::allocBuf(FrameId & frame)
             frame = clockHand;
             return;
         }
-        advanceClock();
     }
 }
 
@@ -114,7 +118,7 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
 	bool found = true; // if the page is found
 	FrameId	frameNo;
 	try {
-		hashTable->lookup(file, pageNo, frameNo); // todo: address of??
+		hashTable->lookup(file, pageNo, frameNo);
 	}
 	catch (const HashNotFoundException &e) {
 		found = false; // throw exception when page is not in the buffer pool
@@ -124,10 +128,11 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
 	if (!found) {
 		// Call allocBuf() to allocate a buffer frame 
 		allocBuf(frameNo);
-		// read the page from disk into the buffer pool frame
-		bufPool[frameNo] = file->readPage(pageNo);
+        Page page_obj = file->readPage(pageNo); // if page does not exists, an exception will be thrown
+		// no exception thrown, read the page from disk into the buffer pool frame
         hashTable->insert(file, pageNo, frameNo);
         bufDescTable[frameNo].Set(file, pageNo);
+        bufPool[frameNo] = page_obj;
         page = bufPool + frameNo;
 	}
 	else {
@@ -200,8 +205,9 @@ void BufMgr::flushFile(const File* file)
 				bufDescTable[i].file->writePage(bufPool[bufDescTable[i].frameNo]);
 				bufDescTable[i].dirty = false;
 			}
-			// delete page from file
-            disposePage(const_cast<File*>(file), bufDescTable[i].pageNo);
+			// delete page info from bufDescTable and hashTable
+            hashTable->remove(file, bufDescTable[i].pageNo);
+            bufDescTable[bufDescTable[i].frameNo].Clear();
 		}
   	}
 }
@@ -218,12 +224,17 @@ void BufMgr::disposePage(File* file, const PageId PageNo)
 		found = false;
 	}
 
+	// todo: don't need to delete page if not found?
 	// do nothing if not found
 	if (!found) return;
 
 	// free frame and remove entry from hash table.
 	bufDescTable[frameNo].Clear();
 	hashTable->remove(file, PageNo);
+
+	// todo: what if the page is dirty? don't need to flush it before deletion?
+	// delete page from file
+    file->deletePage(PageNo);
 }
 
 void BufMgr::printSelf(void) 
