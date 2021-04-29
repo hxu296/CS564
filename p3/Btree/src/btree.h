@@ -128,6 +128,16 @@ struct IndexMetaInfo{
    * Page number of root page of the B+ Tree inside the file index file.
    */
 	PageId rootPageNo;
+
+  /**
+  * Number of keys in leaf node, depending upon the type of key.
+  */
+	int leafOccupancy;
+
+  /**
+  * Number of keys in non-leaf node, depending upon the type of key.
+  */
+	int nodeOccupancy;
 };
 
 /*
