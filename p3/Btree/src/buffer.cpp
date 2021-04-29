@@ -50,7 +50,7 @@ BufMgr::~BufMgr() {
   	}
   }
 
-	delete hashTable;
+  delete hashTable;
   delete [] bufDescTable;
   delete [] bufPool;
 }
