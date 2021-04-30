@@ -226,7 +226,8 @@ BTreeIndex::~BTreeIndex()
     // Add your code below. Please do not remove this line.
 
     // clearing up any state variables
-    // TODO: not sure, what is state var
+    scanExecuting = false;
+
     // unpinning any B+ Tree pages that are pinned
     // TODO: which pages are pinned?
     //bufMgr->unPinPage(file);
@@ -235,6 +236,7 @@ BTreeIndex::~BTreeIndex()
     bufMgr->flushFile(file);
     // deletion of the file object is required, which will call the destructor of File class causing the index file to be closed
     delete file;
+    file = nullptr;
 }
 
 /**
@@ -352,7 +354,7 @@ void BTreeIndex::naiveInsertNonLeaf(PageId targetNonLeafId, const void *key, Pag
  * @param pageNo
  */
 void BTreeIndex::insertNonLeaf(PageId targetNonLeafId, const void *key, PageId pageNo){
-    
+
 }
 
 void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId rid){    Page *targetLeaf, *newLeaf;
@@ -443,22 +445,130 @@ void BTreeIndex::insertEntry(const void *key, const RecordId rid)
     }
 }
 
+/**
+    * find the index of the given key in leaf node
+    * @param key
+    * @param pageNo
+    */
+int BTreeIndex::searchHelper(const void *key, LeafNodeInt* node)
+{
+    int targetIndex = -1;
+
+    for (int i = 0; i < node->size; i++) {
+        if (node->keyArray[i] == *((int*)key)) {
+            targetIndex = i;
+            break;
+        }
+    }
+    return targetIndex;
+}
+
 // -----------------------------------------------------------------------------
 // BTreeIndex::startScan
 // -----------------------------------------------------------------------------
 
+/**
+	 * Begin a filtered scan of the index.  For instance, if the method is called
+	 * using ("a",GT,"d",LTE) then we should seek all entries with a value
+	 * greater than "a" and less than or equal to "d".
+	 * If another scan is already executing, that needs to be ended here.
+	 * Set up all the variables for scan. Start from root to find out the leaf page that contains the first RecordID
+	 * that satisfies the scan parameters. Keep that page pinned in the buffer pool.
+   * @param lowVal	Low value of range, pointer to integer / double / char string
+   * @param lowOp		Low operator (GT/GTE)
+   * @param highVal	High value of range, pointer to integer / double / char string
+   * @param highOp	High operator (LT/LTE)
+   * @throws  BadOpcodesException If lowOp and highOp do not contain one of their their expected values
+   * @throws  BadScanrangeException If lowVal > highval
+	 * @throws  NoSuchKeyFoundException If there is no key in the B+ tree that satisfies the scan criteria.
+	**/
 void BTreeIndex::startScan(const void* lowValParm,
 				   const Operator lowOpParm,
 				   const void* highValParm,
 				   const Operator highOpParm)
 {
     // Add your code below. Please do not remove this line.
+
+    // convert the input to int (assumed only use integer)
+    lowValInt = *((int*)lowValParm);
+    highValInt = *((int*)highValParm);
+    lowOp = lowOpParm;
+    highOp = highOpParm;
+
+    // low value should be less than or equal to high value
+    if (lowValInt > highValInt)
+        throw BadScanrangeException();
+
+    // only support GT, GTE and LT, LTE operators
+    if (lowOp != GT && lowOp != GTE)
+        throw BadOpcodesException();
+    if (highOp != LT && highOp != LTE)
+        throw BadOpcodesException();
+
+    // If another scan is already executing, that needs to be ended here.
+    if (scanExecuting)
+        return; // TODO: or endScan()?
+
+    // Start from root to find out the leaf page that contains the first RecordID
+    // that satisfies the scan parameters. Keep that page pinned in the buffer pool.
+
+    // first find the page that may contain first rid in given range
+    PageId target_page_id = findTargetLeaf(lowValParm); // this returns the page may contain the target key
+    Page *page;
+    bufMgr->readPage(file, target_page_id, page);
+    //bufMgr->unPinPage(file, target_page_id, false);
+    LeafNodeInt* leaf_node = ((LeafNodeInt*)page);
+
+    // we then do the search to see if it really exists
+    int key_index = searchHelper(lowValParm, leaf_node);
+    if (key_index == -1)
+        throw NoSuchKeyFoundException();
+    else { // found
+        if (lowOp == GTE) {
+            // pin that page // TODO
+            currentPageNum = target_page_id;
+            currentPageData = page;
+            // at tail
+            if (key_index == leaf_node->size - 1) {
+                nextEntry = -1; // Index of next entry to be scanned in current leaf being scanned. TODO: not sure
+            } else {
+                nextEntry = key_index + 1;
+            }
+        }
+        if (lowOp == GT) {
+            // at tail
+            if (key_index == leaf_node->size - 1) {
+                // pin the right sbling (rightSibPageNo) //TODO ?not unpin the page to keep pinned?
+                bufMgr->unPinPage(file, target_page_id, false);
+                currentPageNum = leaf_node->rightSibPageNo;
+                Page *rightSibpage;
+                bufMgr->readPage(file, target_page_id, rightSibpage);
+                currentPageData = rightSibpage;
+                nextEntry = 1;
+            }
+            else {
+                // pin that page // TODO
+                currentPageNum = target_page_id;
+                currentPageData = page;
+                nextEntry = key_index + 1;
+            }
+        }
+    }
+
+    scanExecuting = true;
 }
 
 // -----------------------------------------------------------------------------
 // BTreeIndex::scanNext
 // -----------------------------------------------------------------------------
 
+/**
+	 * Fetch the record id of the next index entry that matches the scan.
+	 * Return the next record from current page being scanned. If current page has been scanned to its entirety, move on to the right sibling of current page, if any exists, to start scanning that page. Make sure to unpin any pages that are no longer required.
+   * @param outRid	RecordId of next record found that satisfies the scan criteria returned in this
+	 * @throws ScanNotInitializedException If no scan has been initialized.
+	 * @throws IndexScanCompletedException If no more records, satisfying the scan criteria, are left to be scanned.
+	**/
 void BTreeIndex::scanNext(RecordId& outRid) 
 {
     // Add your code below. Please do not remove this line.
@@ -468,9 +578,26 @@ void BTreeIndex::scanNext(RecordId& outRid)
 // BTreeIndex::endScan
 // -----------------------------------------------------------------------------
 //
+
+/**
+	 * Terminate the current scan. Unpin any pinned pages. Reset scan specific variables.
+	 * @throws ScanNotInitializedException If no scan has been initialized.
+	**/
 void BTreeIndex::endScan() 
 {
     // Add your code below. Please do not remove this line.
+
+    if (!scanExecuting)
+        throw ScanNotInitializedException();
+
+    // unpins all the pages that have been pinned for the purpose of the scan
+    bufMgr->unPinPage(file, currentPageNum, false);
+    // clear the relative fields // TODO
+    currentPageNum = -1;
+    currentPageData = nullptr;
+    nextEntry = -1;
+
+    scanExecuting = false;
 }
 
 }
