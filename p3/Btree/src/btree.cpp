@@ -345,34 +345,17 @@ void BTreeIndex::naiveInsertNonLeaf(PageId targetNonLeafId, const void *key, Pag
     bufMgr->unPinPage(file, targetNonLeafId, true);
 }
 
-void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId rid){
-//    // link newNode to targetNode's parent node.
-//    PageId parentPageId;
-//    if(targetNode->parenId == 0){
-//        // targetNode is root, allocate and setup parent page.
-//        Page *parentPage;
-//        bufMgr->allocPage(file, parentPageId, parentPage);
-//        NonLeafNodeInt *parentNode = (NonLeafNodeInt*)parentPage;
-//        parentNode->type = NONLEAF;
-//        parentNode->parenId = 0;
-//        parentNode->size = 0;
-//        parentNode->level = 1;
-//        bufMgr->unPinPage(file, parentPageId, true);
-//    } else{
-//        parentPageId = targetNode->parenId;
-//    }
-//    naiveInsertNonLeaf(parentPageId, (void *) newNode->keyArray, newLeafId); // passing the pointer to the first element of right node
+/**
+ * Assume nonleaf is full. Insert key-pageNo pair and perform recursive split.
+ * @param targetNonLeafId
+ * @param key
+ * @param pageNo
+ */
+void BTreeIndex::insertNonLeaf(PageId targetNonLeafId, const void *key, PageId pageNo){
+    
 }
 
-/**
- * Assume targetLeaf is a full leaf node. Split it into two leaf nodes that belong to targetLeaf's parent.
- * @param targetLeaf
- * @param key
- * @param rid
- * @return
- */
-PageId BTreeIndex::splitLeaf(PageId targetLeafId, const void *key, const RecordId rid){
-    Page *targetLeaf, *newLeaf;
+void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId rid){    Page *targetLeaf, *newLeaf;
     PageId newLeafId;
     bufMgr->readPage(file, targetLeafId, targetLeaf);
     bufMgr->allocPage(file, newLeafId, newLeaf);
@@ -415,7 +398,26 @@ PageId BTreeIndex::splitLeaf(PageId targetLeafId, const void *key, const RecordI
     targetNode->rightSibPageNo = newLeafId;
     bufMgr->unPinPage(file, targetLeafId, true);
     bufMgr->unPinPage(file, newLeafId, true);
-    return newLeafId;
+    // link newNode to targetNode's parent node.
+    PageId parentPageId;
+    if(targetNode->parenId == 0){
+        // targetNode is root, allocate and setup parent page.
+        Page *parentPage;
+        bufMgr->allocPage(file, parentPageId, parentPage);
+        NonLeafNodeInt *parentNode = (NonLeafNodeInt*)parentPage;
+        parentNode->type = NONLEAF;
+        parentNode->parenId = 0;
+        parentNode->size = 0;
+        parentNode->level = 1;
+        bufMgr->unPinPage(file, parentPageId, true);
+    } else{
+        parentPageId = targetNode->parenId;
+    }
+    if(isFull(parentPageId)){
+        insertNonLeaf(parentPageId, (void *) newNode->keyArray, newLeafId);
+    } else {
+        naiveInsertNonLeaf(parentPageId, (void *) newNode->keyArray, newLeafId);
+    }
 }
 
 // -----------------------------------------------------------------------------

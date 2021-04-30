@@ -395,14 +395,12 @@ class BTreeIndex {
     void insertLeaf(PageId targetLeafId, const void *key, const RecordId rid);
 
     /**
-    * Assume targetLeaf is a full leaf node. Split it into two leaf nodes that belong to targetLeaf's parent.
-    * @param targetLeafId
+    * Assume nonleaf is full. Insert key-pageNo pair and perform recursive split.
+    * @param targetNonLeafId
     * @param key
-    * @param rid
-    * @return
+    * @param pageNo
     */
-    PageId splitLeaf(PageId targetLeafId, const void *key, const RecordId rid);
-
+    void insertNonLeaf(PageId targetNonLeafId, const void *key, PageId pageNo);
 
  public:
 
