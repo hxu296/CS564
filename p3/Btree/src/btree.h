@@ -30,6 +30,12 @@ enum Datatype
 	STRING = 2
 };
 
+enum Nodetype
+{
+    LEAF,
+    NONLEAF
+};
+
 /**
  * @brief Scan operations enumeration. Passed to BTreeIndex::startScan() method.
  */
@@ -109,7 +115,7 @@ bool operator<( const RIDKeyPair<T>& r1, const RIDKeyPair<T>& r2 )
  * at the root the root page may get moved up and get a new page no.
 */
 struct IndexMetaInfo{
-  /**
+    /**
    * Name of base relation.
    */
 	char relationName[20];
@@ -138,6 +144,11 @@ struct IndexMetaInfo{
   * Number of keys in non-leaf node, depending upon the type of key.
   */
 	int nodeOccupancy;
+
+ /**
+  * Depth of the tree. If the tree only has root node, depth = 0.
+ */
+	int depth;
 };
 
 /*
@@ -151,6 +162,17 @@ at this level are just above the leaf nodes. Otherwise set to 0.
  * @brief Structure for all non-leaf nodes when the key is of INTEGER type.
 */
 struct NonLeafNodeInt{
+
+  /**
+  * Should be initialized as NONLEAF.
+  */
+   Nodetype type;
+
+   /**
+   * Number of keys in the node.
+   */
+    int size;
+
   /**
    * Level of the node in the tree.
    */
@@ -165,6 +187,11 @@ struct NonLeafNodeInt{
    * Stores page numbers of child pages which themselves are other non-leaf/leaf nodes in the tree.
    */
 	PageId pageNoArray[ INTARRAYNONLEAFSIZE + 1 ];
+
+    /**
+    * PageId of its parent node. 0 represents this page is root.
+    */
+    PageId parenId;
 };
 
 
@@ -173,8 +200,18 @@ struct NonLeafNodeInt{
 */
 struct LeafNodeInt{
   /**
-   * Stores keys.
-   */
+  * Should be initialized as LEAF.
+  */
+    Nodetype type;
+
+  /**
+  * Number of keys in the node.
+  */
+    int size;
+
+  /**
+  * Stores keys.
+  */
 	int keyArray[ INTARRAYLEAFSIZE ];
 
   /**
@@ -187,6 +224,11 @@ struct LeafNodeInt{
 	 * This linking of leaves allows to easily move from one leaf to the next leaf during index scan.
    */
 	PageId rightSibPageNo;
+
+    /**
+     * PageId of its parent node. 0 represents this page is root.
+     */
+    PageId parenId;
 };
 
 
@@ -238,6 +280,10 @@ class BTreeIndex {
    */
 	int			nodeOccupancy;
 
+ /**
+  * Depth of the tree. If the tree has only root node, depth = 0.
+  */
+	int depth;
 
 	// MEMBERS SPECIFIC TO SCANNING
 
@@ -301,7 +347,63 @@ class BTreeIndex {
    */
 	Operator	highOp;
 
-	
+ private:
+    /**
+    * helper method for findTargetLeaf. Recursively find the PageId of the target leaf node.
+    * @param pageId
+    * @param key
+    * @return
+    */
+    PageId findTargetLeafHelper(PageId pageId, const void *key);
+
+    /**
+     * Helper method for insertEntry. Return the leaf node PageId to insert the key in.
+     * @param key
+     * @return Leaf node PageId to insert the key in.
+     */
+    PageId findTargetLeaf(const void* key);
+
+    /**
+     * Checks whether the node is full.
+     * @param targetId
+     * @return True if the node is full, false otherwise.
+     */
+    bool isFull(PageId targetId);
+
+    /**
+     * Assume leaf is not full. Insert the key-rid pair into the leaf.
+     * @param targetLeafId
+     * @param key
+     * @param rid
+     */
+    void naiveInsertLeaf(PageId targetLeafId, const void *key, const RecordId rid);
+
+    /**
+    * Assume nonleaf is not full. Insert the key-pageNo pair into the nonleaf.
+    * @param targetNonLeafId
+    * @param key
+    * @param pageNo
+    */
+    void naiveInsertNonLeaf(PageId targetNonLeafId, const void *key, PageId pageNo);
+
+    /**
+     * Assume leaf is full. Insert key-rid pair and perform recursive split.
+     * @param targetLeafId
+     * @param key
+     * @param rid
+     */
+    void insertLeaf(PageId targetLeafId, const void *key, const RecordId rid);
+
+    /**
+    * Assume targetLeaf is a full leaf node. Split it into two leaf nodes that belong to targetLeaf's parent.
+    * @param targetLeafId
+    * @param key
+    * @param rid
+    * @return
+    */
+    PageId splitLeaf(PageId targetLeafId, const void *key, const RecordId rid);
+
+
  public:
 
   /**
