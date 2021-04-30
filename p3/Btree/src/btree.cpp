@@ -131,8 +131,8 @@ namespace badgerdb
 // -----------------------------------------------------------------------------
 /**
    * BTreeIndex Constructor.
-	 * Check to see if the corresponding index file exists. If so, open the file.
-	 * If not, create it and insert entries for every tuple in the base relation using FileScan class.
+   * Check to see if the corresponding index file exists. If so, open the file.
+   * If not, create it and insert entries for every tuple in the base relation using FileScan class.
    *
    * @param relationName        Name of file.
    * @param outIndexName        Return the name of index file.
@@ -224,6 +224,17 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 BTreeIndex::~BTreeIndex()
 {
     // Add your code below. Please do not remove this line.
+
+    // clearing up any state variables
+    // TODO: not sure, what is state var
+    // unpinning any B+ Tree pages that are pinned
+    // TODO: which pages are pinned?
+    //bufMgr->unPinPage(file);
+
+    // flushing the index file
+    bufMgr->flushFile(file);
+    // deletion of the file object is required, which will call the destructor of File class causing the index file to be closed
+    delete file;
 }
 
 /**
