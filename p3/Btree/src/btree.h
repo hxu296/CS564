@@ -154,7 +154,7 @@ struct IndexMetaInfo{
 /*
 Each node is a page, so once we read the page in we just cast the pointer to the page to this struct and use it to access the parts
 These structures basically are the format in which the information is stored in the pages for the index file depending on what kind of 
-node they are. The level memeber of each non leaf structure seen below is set to 1 if the nodes 
+node they are. The level member of each non leaf structure seen below is set to 1 if the nodes
 at this level are just above the leaf nodes. Otherwise set to 0.
 */
 
@@ -401,6 +401,13 @@ class BTreeIndex {
     * @param pageNo
     */
     void insertNonLeaf(PageId targetNonLeafId, const void *key, PageId pageNo);
+
+    /**
+    * find the index of the given key in leaf node
+    * @param key
+    * @param pageNo
+    */
+    int searchHelper(const void *key, LeafNodeInt* node);
 
  public:
 
