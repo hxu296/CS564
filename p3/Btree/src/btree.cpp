@@ -352,7 +352,7 @@ void BTreeIndex::naiveInsertNonLeaf(PageId targetNonLeafId, const void *key, Pag
  * @param pageNo
  */
 void BTreeIndex::insertNonLeaf(PageId targetNonLeafId, const void *key, PageId pageNo){
-    
+
 }
 
 void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId rid){    Page *targetLeaf, *newLeaf;
