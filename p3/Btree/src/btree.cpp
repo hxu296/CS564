@@ -21,110 +21,6 @@
 
 namespace badgerdb
 {
-//    private:
-//
-//    /**
-//     * File object for the index file.
-//     */
-//    File		*file;
-//
-//    /**
-//     * Buffer Manager Instance.
-//     */
-//    BufMgr	*bufMgr;
-//
-//    /**
-//     * Page number of meta page.
-//     */
-//    PageId	headerPageNum;
-//
-//    /**
-//     * page number of root page of B+ tree inside index file.
-//     */
-//    PageId	rootPageNum;
-//
-//    /**
-//     * Datatype of attribute over which index is built.
-//     */
-//    Datatype	attributeType;
-//
-//    /**
-//     * Offset of attribute, over which index is built, inside records.
-//     */
-//    int 		attrByteOffset;
-//
-//    /**
-//     * Number of keys in leaf node, depending upon the type of key.
-//     */
-//    int			leafOccupancy;
-//
-//    /**
-//     * Number of keys in non-leaf node, depending upon the type of key.
-//     */
-//    int			nodeOccupancy;
-//
-//
-//    // MEMBERS SPECIFIC TO SCANNING
-//
-//    /**
-//     * True if an index scan has been started.
-//     */
-//    bool		scanExecuting;
-//
-//    /**
-//     * Index of next entry to be scanned in current leaf being scanned.
-//     */
-//    int			nextEntry;
-//
-//    /**
-//     * Page number of current page being scanned.
-//     */
-//    PageId	currentPageNum;
-//
-//    /**
-//     * Current Page being scanned.
-//     */
-//    Page		*currentPageData;
-//
-//    /**
-//     * Low INTEGER value for scan.
-//     */
-//    int			lowValInt;
-//
-//    /**
-//     * Low DOUBLE value for scan.
-//     */
-//    double	lowValDouble;
-//
-//    /**
-//     * Low STRING value for scan.
-//     */
-//    std::string	lowValString;
-//
-//    /**
-//     * High INTEGER value for scan.
-//     */
-//    int			highValInt;
-//
-//    /**
-//     * High DOUBLE value for scan.
-//     */
-//    double	highValDouble;
-//
-//    /**
-//     * High STRING value for scan.
-//     */
-//    std::string highValString;
-//
-//    /**
-//     * Low Operator. Can only be GT(>) or GTE(>=).
-//     */
-//    Operator	lowOp;
-//
-//    /**
-//     * High Operator. Can only be LT(<) or LTE(<=).
-//     */
-//    Operator	highOp;
 
 // -----------------------------------------------------------------------------
 // BTreeIndex::BTreeIndex -- Constructor
@@ -197,6 +93,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
         rootNode->type = LEAF;
         rootNode->size = 0;
         rootNode->parenId = 0;
+        rootNode->rightSibPageNo = MAX_PAGEID;
         bufMgr->unPinPage(file, rootPageNum, true);
         // insert all tuples to this BTree.
         FileScan fscan = FileScan(relationName, bufMgr);
@@ -412,6 +309,7 @@ void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId
         parentNode->size = 0;
         parentNode->level = 1;
         bufMgr->unPinPage(file, parentPageId, true);
+        depth++;
     } else{
         parentPageId = targetNode->parenId;
     }
@@ -507,16 +405,15 @@ void BTreeIndex::startScan(const void* lowValParm,
 
     // If another scan is already executing, that needs to be ended here.
     if (scanExecuting)
-        return; // TODO: or endScan()?
+        endScan();
 
     // Start from root to find out the leaf page that contains the first RecordID
     // that satisfies the scan parameters. Keep that page pinned in the buffer pool.
 
     // first find the page that may contain first rid in given range
-    PageId target_page_id = findTargetLeaf(lowValParm); // this returns the page may contain the target key
+    PageId target_page_id = findTargetLeaf(lowValParm); // this returns the page may contain the target key todo: no next page
     Page *page;
     bufMgr->readPage(file, target_page_id, page);
-    //bufMgr->unPinPage(file, target_page_id, false);
     LeafNodeInt* leaf_node = ((LeafNodeInt*)page);
 
     // we then do the search to see if it really exists
@@ -525,36 +422,29 @@ void BTreeIndex::startScan(const void* lowValParm,
         throw NoSuchKeyFoundException();
     else { // found
         if (lowOp == GTE) {
-            // pin that page // TODO
             currentPageNum = target_page_id;
             currentPageData = page;
-            // at tail
-            if (key_index == leaf_node->size - 1) {
-                nextEntry = -1; // Index of next entry to be scanned in current leaf being scanned. TODO: not sure
-            } else {
-                nextEntry = key_index + 1;
-            }
+            nextEntry = key_index;
         }
         if (lowOp == GT) {
-            // at tail
             if (key_index == leaf_node->size - 1) {
-                // pin the right sbling (rightSibPageNo) //TODO ?not unpin the page to keep pinned?
+                // pin the right sibling (rightSibPageNo)
                 bufMgr->unPinPage(file, target_page_id, false);
                 currentPageNum = leaf_node->rightSibPageNo;
                 Page *rightSibpage;
-                bufMgr->readPage(file, target_page_id, rightSibpage);
-                currentPageData = rightSibpage;
-                nextEntry = 1;
+                if(leaf_node->rightSibPageNo != MAX_PAGEID){
+                    bufMgr->readPage(file, leaf_node->rightSibPageNo, rightSibpage);
+                    currentPageData = rightSibpage;
+                    nextEntry = 0;
+                }
             }
             else {
-                // pin that page // TODO
                 currentPageNum = target_page_id;
                 currentPageData = page;
                 nextEntry = key_index + 1;
             }
         }
     }
-
     scanExecuting = true;
 }
 
@@ -572,6 +462,34 @@ void BTreeIndex::startScan(const void* lowValParm,
 void BTreeIndex::scanNext(RecordId& outRid) 
 {
     // Add your code below. Please do not remove this line.
+
+    // check currentPageNum, if currentPageNum
+        // if currentPageNum is valid
+        // check if corresponding key
+            // LT
+                // check key against upper bound
+                    // if key is strictly smaller
+                        // return the corresponding rid
+                        // update nextEntry
+                            // if nextEntry is in this page
+                            // if nextEntry is in next page
+                                // unpin current page
+                                // check if next page exists
+                                    // if exists, read it, unpin current page, set nextEntry to 0
+                                    // if not exists, throw IndexScanCompletedException
+                    // else, throw IndexScanCompletedException
+            // LTE
+                // check key against upper bound
+                    // if key is smaller or equal to
+                        // return the corresponding rid
+                        // update nextEntry
+                            // if nextEntry is in this page
+                            // if nextEntry is in next page
+                                // unpin current page
+                                // check if next page exists
+                                    // if exists, read it, unpin current page, set nextEntry to 0
+                                    // if not exists, throw IndexScanCompletedException
+                    // else, throw IndexScanCompletedException
 }
 
 // -----------------------------------------------------------------------------

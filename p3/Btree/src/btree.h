@@ -348,6 +348,9 @@ class BTreeIndex {
 	Operator	highOp;
 
  private:
+
+    PageId MAX_PAGEID = 0xffffffff;
+
     /**
     * helper method for findTargetLeaf. Recursively find the PageId of the target leaf node.
     * @param pageId
