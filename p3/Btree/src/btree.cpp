@@ -507,8 +507,12 @@ void BTreeIndex::startScan(const void* lowValParm,
 
     // we then do the search to see if it really exists
     int key_index = searchHelper(lowValParm, leaf_node);
-    if (key_index == -1)
-        throw NoSuchKeyFoundException();
+    if (key_index == -1){
+        if(leaf_node->rightSibPageNo == MAX_PAGEID){
+
+        }
+
+    }
     else { // found
         if (lowOp == GTE) {
             currentPageNum = target_page_id;
