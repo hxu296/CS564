@@ -55,7 +55,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
     // set up index file.
     std::cout << indexName << std::endl;
     if(BlobFile::exists(indexName)){
-        printf("index file exists\n");
+        //printf("index file exists\n");
         // index file exists.
         file = new BlobFile(indexName, false);
         headerPageNum = file->getFirstPageNo();
@@ -69,7 +69,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
         nodeOccupancy = metaInfo->nodeOccupancy;
         depth = metaInfo->depth;
     } else{
-        printf("index file not exists\n");
+        //printf("index file not exists\n");
         // index file doesn't exist.
         file =  new BlobFile(indexName, true);
         Page *metaPage, *rootPage;
@@ -96,9 +96,9 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
         rootNode->parentId = MAX_PAGEID;
         rootNode->rightSibPageNo = MAX_PAGEID;
         bufMgr->unPinPage(file, rootPageNum, true);
-        printf("rootNode->parentId: %u\n", rootNode->parentId);
+        //printf("rootNode->parentId: %u\n", rootNode->parentId);
     }
-    printTreeStatus();
+    //printTreeStatus();
     // insert all tuples in relation file to this BTree.
     FileScan fscan = FileScan(relationName, bufMgr);
     try{
@@ -389,14 +389,14 @@ void BTreeIndex::printLeaf(PageId id, LeafNodeInt* node){
 }
 
 void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId rid){
-    printf("targetLeafId: %d\n", targetLeafId);
-    printf("inserting %d\n", *(int*)key);
+    //printf("targetLeafId: %d\n", targetLeafId);
+    //printf("inserting %d\n", *(int*)key);
     Page *targetLeaf, *newLeaf;
     PageId newLeafId;
     bufMgr->readPage(file, targetLeafId, targetLeaf);
-    printLeaf(targetLeafId, (LeafNodeInt*)targetLeaf);
+    //printLeaf(targetLeafId, (LeafNodeInt*)targetLeaf);
     bufMgr->allocPage(file, newLeafId, newLeaf);
-    printf("newLeafId: %d\n", newLeafId);
+    //printf("newLeafId: %d\n", newLeafId);
     LeafNodeInt *targetNode = (LeafNodeInt*)targetLeaf;
     LeafNodeInt *newNode = (LeafNodeInt*)newLeaf;
     newNode->type = LEAF;
@@ -415,7 +415,7 @@ void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId
         totalKeys[i + 1] = targetNode->keyArray[i];
         totalIds[i + 1] = targetNode->ridArray[i];
     }
-    printf("finish constructing total array\n");
+    //printf("finish constructing total array\n");
     for(i = 0; i < midIndex; i++){
         leftKeys[i] = totalKeys[i];
         leftIds[i] = totalIds[i];
@@ -423,7 +423,7 @@ void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId
     }
     int *midKey = new int;
     *midKey = totalKeys[i];
-    printf("midKey: %d\n", *midKey);
+    //printf("midKey: %d\n", *midKey);
     for(j = i; j < INTARRAYLEAFSIZE + 1; j++){
         rightKeys[j - i] = totalKeys[j];
         rightIds[j - i] = totalIds[j];
@@ -441,7 +441,7 @@ void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId
     targetNode->rightSibPageNo = newLeafId;
     // link newNode to targetNode's parent node.
     PageId parentPageId;
-    printf("targetNode->parentId: %d\n", targetNode->parentId);
+    //printf("targetNode->parentId: %d\n", targetNode->parentId);
     if(targetNode->parentId == MAX_PAGEID){
         // targetNode is root, allocate and setup parent page.
         Page *parentPage;
@@ -458,7 +458,7 @@ void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId
         targetNode->parentId = newNode->parentId = parentPageId;
         bufMgr->unPinPage(file, targetLeafId, true);
         bufMgr->unPinPage(file, newLeafId, true);
-        printf("new parentId: %d\n", parentPageId);
+        //printf("new parentId: %d\n", parentPageId);
         // insert midKey to parent.
         insertNewRoot(midKey, targetLeafId, newLeafId);
     } else{
