@@ -431,6 +431,7 @@ void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId
     Page *targetLeaf, *newLeaf;
     PageId newLeafId;
     bufMgr->readPage(file, targetLeafId, targetLeaf);
+    bufMgr->allocPage(file, newLeafId, newLeaf);
     LeafNodeInt *targetNode = (LeafNodeInt*)targetLeaf;
     LeafNodeInt *newNode = (LeafNodeInt*)newLeaf;
     newNode->type = LEAF;
