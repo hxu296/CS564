@@ -130,6 +130,7 @@ BTreeIndex::~BTreeIndex()
     metaInfo->leafOccupancy = leafOccupancy;
     metaInfo->nodeOccupancy = nodeOccupancy;
     metaInfo->depth = depth;
+    bufMgr->unPinPage(file, headerPageNum, true);
     // flush index file.
     bufMgr->flushFile(file);
     // delete index file.
