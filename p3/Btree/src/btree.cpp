@@ -258,7 +258,7 @@ void BTreeIndex::naiveInsertNonLeaf(PageId targetNonLeafId, const void *key, Pag
     for (int i = nonLeafNode->size; i > targetIndex; i--) {
         nonLeafNode->keyArray[i] = nonLeafNode->keyArray[i - 1];
         nonLeafNode->pageNoArray[i + 1] = nonLeafNode->pageNoArray[i];
-    } // todo: what if it's empty? If it's empty insert 2 pageNo. pageNo on the right,
+    }
     nonLeafNode->keyArray[targetIndex] = intKey;
     nonLeafNode->pageNoArray[targetIndex + 1] = pageNo;
     nonLeafNode->size++;
@@ -282,6 +282,8 @@ void BTreeIndex::insertNewRoot(const void *key, PageId leftPageNo, PageId rightP
  * @param pageNo
  */
 void BTreeIndex::insertNonLeaf(PageId targetNonLeafId, const void *key, PageId pageNo){
+    printTreeStatus();
+    //printf("insert key %d with pageNo %d\n", *(int*)key, pageNo);
     // create newNonLeaf
     Page *targetNonLeaf, *newNonLeaf;
     PageId newNonLeafId;
@@ -291,6 +293,7 @@ void BTreeIndex::insertNonLeaf(PageId targetNonLeafId, const void *key, PageId p
     NonLeafNodeInt *newNode = (NonLeafNodeInt*)newNonLeaf;
     newNode->type = NONLEAF;
     newNode->level = targetNode->level;
+    //printNode(targetNonLeafId, targetNonLeaf);
     // split keys into left keys, mid key, and right keys.
     int midIndex = (INTARRAYNONLEAFSIZE + 1) / 2;
     int leftKeys[INTARRAYNONLEAFSIZE], rightKeys[INTARRAYNONLEAFSIZE], totalKeys[INTARRAYNONLEAFSIZE + 1];
@@ -312,10 +315,10 @@ void BTreeIndex::insertNonLeaf(PageId targetNonLeafId, const void *key, PageId p
     }
     // split pageNo into left pageNo and right pageNo.
     int leftPageNo[INTARRAYNONLEAFSIZE + 1], rightPageNo[INTARRAYNONLEAFSIZE + 1], totalPageNo[INTARRAYNONLEAFSIZE + 2];
-    for(i = 0; i < INTARRAYNONLEAFSIZE && targetNode->keyArray[i] <= intKey; i++)
+    for(i = 0; i < INTARRAYNONLEAFSIZE + 1 && targetNode->keyArray[i] < intKey; i++)
         totalPageNo[i] = targetNode->pageNoArray[i];
     totalPageNo[i] = pageNo; //   i = insert key index + 1
-    for(; i < INTARRAYLEAFSIZE; i++)
+    for(; i < INTARRAYNONLEAFSIZE + 1; i++)
         totalPageNo[i + 1] = targetNode->pageNoArray[i];
     for(i = 0; i <= midIndex; i++)
         leftPageNo[i] = totalPageNo[i];
@@ -342,6 +345,8 @@ void BTreeIndex::insertNonLeaf(PageId targetNonLeafId, const void *key, PageId p
         }
         bufMgr->unPinPage(file, childPageId, true);
     }
+    //printNode(targetNonLeafId, targetNonLeaf);
+    //printNode(newNonLeafId, newNonLeaf);
     // find parent for targetNonLeaf and newNonLeaf.
     PageId parentPageId;
     if(targetNode->parentId == MAX_PAGEID){
@@ -354,12 +359,14 @@ void BTreeIndex::insertNonLeaf(PageId targetNonLeafId, const void *key, PageId p
         parentNode->size = 0;
         parentNode->level = 0;
         bufMgr->unPinPage(file, parentPageId, true);
+        rootPageNum = parentPageId;
         depth++;
         // link targetNonLeaf and newNonLeaf to parent.
         targetNode->parentId = newNode->parentId = parentPageId;
         bufMgr->unPinPage(file, targetNonLeafId, true);
         bufMgr->unPinPage(file, newNonLeafId, true);
         // insert mid key to parent.
+        printf("new parentId: %u\n", parentPageId);
         insertNewRoot(midKey, targetNonLeafId, newNonLeafId);
     } else{
         parentPageId = targetNode->parentId;
@@ -376,16 +383,34 @@ void BTreeIndex::insertNonLeaf(PageId targetNonLeafId, const void *key, PageId p
     }
 }
 
-void BTreeIndex::printLeaf(PageId id, LeafNodeInt* node){
-    printf("node %d Stats:\n", id);
-    printf("\tsize: %d\n", node->size);
-    if(node->size != 0)
-        printf("\tminKey: %d maxKey: %d\n", node->keyArray[0], node->keyArray[node->size - 1]);
-    printf("\trightSib: %d\n", node->rightSibPageNo);
-    printf("\tkeyArray:");
-    for(int i = 0; i < node->size; i++)
-        printf("%d ", node->keyArray[i]);
-    printf("\n");
+void BTreeIndex::printNode(PageId id, Page* page){
+    Nodetype type = *(Nodetype*)page;
+    if(type == NONLEAF){
+        NonLeafNodeInt *node = (NonLeafNodeInt*)page;
+        printf("Internal node %d Stats:\n", id);
+        printf("\tsize: %d\n", node->size);
+        if(node->size != 0)
+            printf("\tminKey: %d maxKey: %d\n", node->keyArray[0], node->keyArray[node->size - 1]);
+        printf("\tkeyArray: ");
+        for(int i = 0; i < node->size; i++)
+            printf("%d ", node->keyArray[i]);
+        printf("\n");
+        printf("\tchildren: ");
+        for(int i = 0; i < node->size + 1; i++)
+            printf("%d ", node->pageNoArray[i]);
+        printf("\n");
+    } else{
+        LeafNodeInt *node = (LeafNodeInt*)page;
+        printf("Leaf node %d Stats:\n", id);
+        printf("\tsize: %d\n", node->size);
+        if(node->size != 0)
+            printf("\tminKey: %d maxKey: %d\n", node->keyArray[0], node->keyArray[node->size - 1]);
+        printf("\trightSib: %d\n", node->rightSibPageNo);
+        printf("\tkeyArray: ");
+        for(int i = 0; i < node->size; i++)
+            printf("%d ", node->keyArray[i]);
+        printf("\n");
+    }
 }
 
 void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId rid){
@@ -458,7 +483,7 @@ void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId
         targetNode->parentId = newNode->parentId = parentPageId;
         bufMgr->unPinPage(file, targetLeafId, true);
         bufMgr->unPinPage(file, newLeafId, true);
-        //printf("new parentId: %d\n", parentPageId);
+        printf("new parentId: %d\n", parentPageId);
         // insert midKey to parent.
         insertNewRoot(midKey, targetLeafId, newLeafId);
     } else{

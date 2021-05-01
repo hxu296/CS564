@@ -52,14 +52,14 @@ enum Operator
  * @brief Number of key slots in B+Tree leaf for INTEGER key.
  */
 //                                                  sibling ptr             key               rid
-const  int INTARRAYLEAFSIZE = ( Page::SIZE - sizeof( PageId ) ) / ( sizeof( int ) + sizeof( RecordId ) );
-
+//const  int INTARRAYLEAFSIZE = ( Page::SIZE - sizeof( PageId ) ) / ( sizeof( int ) + sizeof( RecordId ) );
+const int INTARRAYLEAFSIZE = 10;
 /**
  * @brief Number of key slots in B+Tree non-leaf for INTEGER key.
  */
 //                                                     level     extra pageNo                  key       pageNo
-const  int INTARRAYNONLEAFSIZE = ( Page::SIZE - sizeof( int ) - sizeof( PageId ) ) / ( sizeof( int ) + sizeof( PageId ) );
-
+//const  int INTARRAYNONLEAFSIZE = ( Page::SIZE - sizeof( int ) - sizeof( PageId ) ) / ( sizeof( int ) + sizeof( PageId ) );
+const  int INTARRAYNONLEAFSIZE = 20;
 /**
  * @brief Structure to store a key-rid pair. It is used to pass the pair to functions that 
  * add to or make changes to the leaf node pages of the tree. Is templated for the key member.
@@ -353,7 +353,7 @@ class BTreeIndex {
 
     PageId MAX_PAGEID = 999999999;
 
-    void printLeaf(PageId id, LeafNodeInt* node);
+    void printNode(PageId id, Page* node);
 
     void printTreeStatus();
 
