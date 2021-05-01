@@ -435,16 +435,36 @@ void BTreeIndex::insertEntry(const void *key, const RecordId rid)
     * @param key
     * @param pageNo
     */
-int BTreeIndex::searchHelper(const void *key, LeafNodeInt* node)
+int BTreeIndex::searchHelper(const void *key, LeafNodeInt* node, LeafNodeInt*& new_node)
 {
     int targetIndex = -1;
 
+    // the node found is the last node, no right sibling
     for (int i = 0; i < node->size; i++) {
-        if (node->keyArray[i] == *((int*)key)) {
+        if (node->keyArray[i] >= *((int*)key)) {
             targetIndex = i;
             break;
         }
     }
+
+    // if -1, move on to next page
+    while (targetIndex == -1 && node->rightSibPageNo != MAX_PAGEID) {
+        // update node
+        bufMgr->unPinPage(file, ((Page*)node)->page_number(), false);
+        currentPageNum = node->rightSibPageNo;
+        Page *rightSibpage;
+        bufMgr->readPage(file, node->rightSibPageNo, rightSibpage);
+        node = (LeafNodeInt*)rightSibpage;
+        new_node = node; // return the new node TODO
+
+        for (int i = 0; i < node->size; i++) {
+            if (node->keyArray[i] >= *((int*)key)) {
+                targetIndex = i;
+                break;
+            }
+        }
+    }
+
     return targetIndex;
 }
 
@@ -473,7 +493,7 @@ void BTreeIndex::startScan(const void* lowValParm,
 				   const Operator highOpParm)
 {
     // Add your code below. Please do not remove this line.
-
+    std::cout << "Here start scanning"<< std::endl;
     // convert the input to int (assumed only use integer)
     lowValInt = *((int*)lowValParm);
     highValInt = *((int*)highValParm);
@@ -501,43 +521,64 @@ void BTreeIndex::startScan(const void* lowValParm,
 
     // first find the page that may contain first rid in given range
     PageId target_page_id = findTargetLeaf(lowValParm); // this returns the page may contain the target key
+    std::cout << "low value is " << lowValInt << std::endl;
+    std::cout << "Target page id is " << target_page_id << std::endl;
     Page *page;
     bufMgr->readPage(file, target_page_id, page);
-    LeafNodeInt* leaf_node = ((LeafNodeInt*)page);
+    std::cout << "After reading"<< std::endl;
+    LeafNodeInt* curr_leaf_node = ((LeafNodeInt*)page);
+    LeafNodeInt* target_node = curr_leaf_node; // store the updated node after search
 
     // we then do the search to see if it really exists
+<<<<<<< HEAD
     int key_index = searchHelper(lowValParm, leaf_node);
     if (key_index == -1){
         if(leaf_node->rightSibPageNo == MAX_PAGEID){
 
         }
 
+=======
+    int key_index = searchHelper(lowValParm, curr_leaf_node, target_node);
+    if (key_index == -1) {
+        bufMgr->unPinPage(file, ((Page*)target_node)->page_number(), false); // unpin page no longer useful
+        throw NoSuchKeyFoundException();
+>>>>>>> 305c4cfbf4a0f6cc26010e4c1dd5113ebed3f39f
     }
     else { // found
         if (lowOp == GTE) {
-            currentPageNum = target_page_id;
-            currentPageData = page;
+            currentPageNum = ((Page*)target_node)->page_number();
+            currentPageData = (Page*)target_node;
             nextEntry = key_index;
         }
         if (lowOp == GT) {
-            if (key_index == leaf_node->size - 1) {
-                // pin the right sibling (rightSibPageNo)
-                bufMgr->unPinPage(file, target_page_id, false);
-                currentPageNum = leaf_node->rightSibPageNo;
-                Page *rightSibpage;
-                if(leaf_node->rightSibPageNo != MAX_PAGEID){
-                    bufMgr->readPage(file, leaf_node->rightSibPageNo, rightSibpage);
-                    currentPageData = rightSibpage;
-                    nextEntry = 0;
+            // if first key returned equals the lower bound, next key is the target
+            if (target_node->keyArray[key_index] == lowValInt) {
+                // next key is in next entry
+                if (key_index == target_node->size - 1) {
+                    // pin the right sibling (rightSibPageNo)
+                    bufMgr->unPinPage(file, ((Page*)target_node)->page_number(), false);
+                    currentPageNum = target_node->rightSibPageNo;
+                    Page *rightSibpage;
+                    if(target_node->rightSibPageNo != MAX_PAGEID){
+                        bufMgr->readPage(file, target_node->rightSibPageNo, rightSibpage);
+                        currentPageData = rightSibpage;
+                        nextEntry = 0;
+                    }
+                }
+                else {
+                    currentPageNum = ((Page*)target_node)->page_number();
+                    currentPageData = (Page*)target_node;
+                    nextEntry = key_index + 1;
                 }
             }
-            else {
-                currentPageNum = target_page_id;
-                currentPageData = page;
-                nextEntry = key_index + 1;
+            else { // returned one is correct one
+                currentPageNum = ((Page*)target_node)->page_number();
+                currentPageData = (Page*)target_node;
+                nextEntry = key_index;
             }
         }
     }
+
     scanExecuting = true;
 }
 
