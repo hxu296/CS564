@@ -353,14 +353,29 @@ class BTreeIndex {
 
     PageId MAX_PAGEID = 999999999;
 
+    /**
+     * Print the statistics of a node. Recognize node type within method.
+     * @param id
+     * @param page
+     */
     void printNode(PageId id, Page* node);
 
+    /**
+    * Print the statistics about this Tree.
+    */
     void printTreeStatus();
 
+    /**
+    * Insert key, leftPageNo, and rightPageNo to the empty (newly created) root. All keys in leftPage are smaller than
+    * those in the right page.
+    * @param key
+    * @param leftPageNo
+    * @param rightPageNo
+    */
     void insertNewRoot(const void *key, PageId leftPageNo, PageId rightPageNo);
 
     /**
-    * helper method for findTargetLeaf. Recursively find the PageId of the target leaf node.
+    * Recursively find the PageId of the target leaf node.
     * @param pageId
     * @param key
     * @return
@@ -368,7 +383,7 @@ class BTreeIndex {
     PageId findTargetLeafHelper(PageId pageId, const void *key);
 
     /**
-     * Helper method for insertEntry. Return the leaf node PageId to insert the key in.
+     * Return the leaf node PageId to insert the key in.
      * @param key
      * @return Leaf node PageId to insert the key in.
      */
@@ -414,7 +429,7 @@ class BTreeIndex {
     void insertNonLeaf(PageId targetNonLeafId, const void *key, PageId pageNo);
 
     /**
-    * find the index of the given key in leaf node
+    * Find the index of the given key in leaf node
     * @param key
     * @param pageNo
     */

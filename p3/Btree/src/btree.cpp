@@ -22,9 +22,6 @@
 namespace badgerdb
 {
 
-// -----------------------------------------------------------------------------
-// BTreeIndex::BTreeIndex -- Constructor
-// -----------------------------------------------------------------------------
 /**
    * BTreeIndex Constructor.
    * Check to see if the corresponding index file exists. If so, open the file.
@@ -55,7 +52,6 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
     // set up index file.
     std::cout << indexName << std::endl;
     if(BlobFile::exists(indexName)){
-        //printf("index file exists\n");
         // index file exists.
         file = new BlobFile(indexName, false);
         headerPageNum = file->getFirstPageNo();
@@ -69,7 +65,6 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
         nodeOccupancy = metaInfo->nodeOccupancy;
         depth = metaInfo->depth;
     } else{
-        //printf("index file not exists\n");
         // index file doesn't exist.
         file =  new BlobFile(indexName, true);
         Page *metaPage, *rootPage;
@@ -96,9 +91,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
         rootNode->parentId = MAX_PAGEID;
         rootNode->rightSibPageNo = MAX_PAGEID;
         bufMgr->unPinPage(file, rootPageNum, true);
-        //printf("rootNode->parentId: %u\n", rootNode->parentId);
     }
-    //printTreeStatus();
     // insert all tuples in relation file to this BTree.
     FileScan fscan = FileScan(relationName, bufMgr);
     try{
@@ -121,10 +114,12 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
     scanExecuting = false;
 }
 
-// -----------------------------------------------------------------------------
-// BTreeIndex::~BTreeIndex -- destructor
-// -----------------------------------------------------------------------------
-
+/**
+* BTreeIndex Destructor.
+* End any initialized scan, flush index file, after unpinning any pinned pages, from the buffer manager
+* and delete file instance thereby closing the index file.
+* Destructor should not throw any exceptions. All exceptions should be caught in here itself.
+* */
 BTreeIndex::~BTreeIndex()
 {
     // Add your code below. Please do not remove this line.
@@ -143,6 +138,9 @@ BTreeIndex::~BTreeIndex()
     file = nullptr;
 }
 
+/**
+ * Print the statistics about this Tree.
+ */
 void BTreeIndex::printTreeStatus(){
     printf("Tree Status: \n");
     Page *metaPage;
@@ -158,7 +156,7 @@ void BTreeIndex::printTreeStatus(){
 }
 
 /**
- * helper method for findTargetLeaf. Recursively find the PageId of the target leaf node.
+ * Recursively find the PageId of the target leaf node.
  * @param pageId
  * @param key
  * @return
@@ -187,7 +185,7 @@ PageId BTreeIndex::findTargetLeafHelper(PageId pageId, const void *key){
 }
 
 /**
- * Helper method for insertEntry. Return the leaf node PageId to insert the key in.
+ * Return the leaf node PageId to insert the key in.
  * @param key
  * @return Leaf node PageId to insert the key in.
  */
@@ -265,6 +263,13 @@ void BTreeIndex::naiveInsertNonLeaf(PageId targetNonLeafId, const void *key, Pag
     bufMgr->unPinPage(file, targetNonLeafId, true);
 }
 
+/**
+ * Insert key, leftPageNo, and rightPageNo to the empty (newly created) root. All keys in leftPage are smaller than
+ * those in the right page.
+ * @param key
+ * @param leftPageNo
+ * @param rightPageNo
+ */
 void BTreeIndex::insertNewRoot(const void *key, PageId leftPageNo, PageId rightPageNo){
     Page *rootPage;
     bufMgr->readPage(file, rootPageNum, rootPage);
@@ -283,7 +288,6 @@ void BTreeIndex::insertNewRoot(const void *key, PageId leftPageNo, PageId rightP
  */
 void BTreeIndex::insertNonLeaf(PageId targetNonLeafId, const void *key, PageId pageNo){
     printTreeStatus();
-    //printf("insert key %d with pageNo %d\n", *(int*)key, pageNo);
     // create newNonLeaf
     Page *targetNonLeaf, *newNonLeaf;
     PageId newNonLeafId;
@@ -345,8 +349,6 @@ void BTreeIndex::insertNonLeaf(PageId targetNonLeafId, const void *key, PageId p
         }
         bufMgr->unPinPage(file, childPageId, true);
     }
-    //printNode(targetNonLeafId, targetNonLeaf);
-    //printNode(newNonLeafId, newNonLeaf);
     // find parent for targetNonLeaf and newNonLeaf.
     PageId parentPageId;
     if(targetNode->parentId == MAX_PAGEID){
@@ -383,6 +385,11 @@ void BTreeIndex::insertNonLeaf(PageId targetNonLeafId, const void *key, PageId p
     }
 }
 
+/**
+ * Print the statistics of a node. Recognize node type within method.
+ * @param id
+ * @param page
+ */
 void BTreeIndex::printNode(PageId id, Page* page){
     Nodetype type = *(Nodetype*)page;
     if(type == NONLEAF){
@@ -413,15 +420,17 @@ void BTreeIndex::printNode(PageId id, Page* page){
     }
 }
 
+
+/**
+ * Assume leaf is full. Insert key-rid pair and perform recursive split.
+ * @param targetLeafId
+ * @param key
+ * @param rid
+ */
 void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId rid){
-    //printf("targetLeafId: %d\n", targetLeafId);
-    //printf("inserting %d\n", *(int*)key);
     Page *targetLeaf, *newLeaf;
     PageId newLeafId;
     bufMgr->readPage(file, targetLeafId, targetLeaf);
-    //printLeaf(targetLeafId, (LeafNodeInt*)targetLeaf);
-    bufMgr->allocPage(file, newLeafId, newLeaf);
-    //printf("newLeafId: %d\n", newLeafId);
     LeafNodeInt *targetNode = (LeafNodeInt*)targetLeaf;
     LeafNodeInt *newNode = (LeafNodeInt*)newLeaf;
     newNode->type = LEAF;
@@ -440,7 +449,6 @@ void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId
         totalKeys[i + 1] = targetNode->keyArray[i];
         totalIds[i + 1] = targetNode->ridArray[i];
     }
-    //printf("finish constructing total array\n");
     for(i = 0; i < midIndex; i++){
         leftKeys[i] = totalKeys[i];
         leftIds[i] = totalIds[i];
@@ -448,7 +456,6 @@ void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId
     }
     int *midKey = new int;
     *midKey = totalKeys[i];
-    //printf("midKey: %d\n", *midKey);
     for(j = i; j < INTARRAYLEAFSIZE + 1; j++){
         rightKeys[j - i] = totalKeys[j];
         rightIds[j - i] = totalIds[j];
@@ -461,12 +468,10 @@ void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId
     newNode->size = rightSize;
     std::copy(std::begin(rightKeys), std::end(rightKeys), std::begin(newNode->keyArray));
     std::copy(std::begin(rightIds), std::end(rightIds), std::begin(newNode->ridArray));
-    // todo: printstat
     newNode->rightSibPageNo = targetNode->rightSibPageNo;
     targetNode->rightSibPageNo = newLeafId;
     // link newNode to targetNode's parent node.
     PageId parentPageId;
-    //printf("targetNode->parentId: %d\n", targetNode->parentId);
     if(targetNode->parentId == MAX_PAGEID){
         // targetNode is root, allocate and setup parent page.
         Page *parentPage;
@@ -499,18 +504,15 @@ void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId
     }
 }
 
-// -----------------------------------------------------------------------------
-// BTreeIndex::insertEntry
-// -----------------------------------------------------------------------------
 /**
-	 * Insert a new entry using the pair <value,rid>.
-	 * Start from root to recursively find out the leaf to insert the entry in. The insertion may cause splitting of leaf node.
-	 * This splitting will require addition of new leaf page number entry into the parent non-leaf, which may in-turn get split.
-	 * This may continue all the way upto the root causing the root to get split. If root gets split, metapage needs to be changed accordingly.
-	 * Make sure to unpin pages as soon as you can.
-   * @param key			Key to insert, pointer to integer/double/char string
-   * @param rid			Record ID of a record whose entry is getting inserted into the index.
-	**/
+ * Insert a new entry using the pair <value,rid>.
+ * Start from root to recursively find out the leaf to insert the entry in. The insertion may cause splitting of leaf node.
+ * This splitting will require addition of new leaf page number entry into the parent non-leaf, which may in-turn get split.
+ * This may continue all the way upto the root causing the root to get split. If root gets split, metapage needs to be changed accordingly.
+ * Make sure to unpin pages as soon as you can.
+* @param key			Key to insert, pointer to integer/double/char string
+* @param rid			Record ID of a record whose entry is getting inserted into the index.
+**/
 void BTreeIndex::insertEntry(const void *key, const RecordId rid) 
 {
     // Add your code below. Please do not remove this line.
@@ -523,7 +525,7 @@ void BTreeIndex::insertEntry(const void *key, const RecordId rid)
 }
 
 /**
-    * find the index of the given key in leaf node
+    * Find the index of the given key in leaf node
     * @param key
     * @param pageNo
     */
@@ -565,20 +567,20 @@ int BTreeIndex::searchHelper(const void *key, LeafNodeInt* node, LeafNodeInt*& n
 // -----------------------------------------------------------------------------
 
 /**
-	 * Begin a filtered scan of the index.  For instance, if the method is called
-	 * using ("a",GT,"d",LTE) then we should seek all entries with a value
-	 * greater than "a" and less than or equal to "d".
-	 * If another scan is already executing, that needs to be ended here.
-	 * Set up all the variables for scan. Start from root to find out the leaf page that contains the first RecordID
-	 * that satisfies the scan parameters. Keep that page pinned in the buffer pool.
-   * @param lowVal	Low value of range, pointer to integer / double / char string
-   * @param lowOp		Low operator (GT/GTE)
-   * @param highVal	High value of range, pointer to integer / double / char string
-   * @param highOp	High operator (LT/LTE)
-   * @throws  BadOpcodesException If lowOp and highOp do not contain one of their their expected values
-   * @throws  BadScanrangeException If lowVal > highval
-	 * @throws  NoSuchKeyFoundException If there is no key in the B+ tree that satisfies the scan criteria.
-	**/
+ * Begin a filtered scan of the index.  For instance, if the method is called
+ * using ("a",GT,"d",LTE) then we should seek all entries with a value
+ * greater than "a" and less than or equal to "d".
+ * If another scan is already executing, that needs to be ended here.
+ * Set up all the variables for scan. Start from root to find out the leaf page that contains the first RecordID
+ * that satisfies the scan parameters. Keep that page pinned in the buffer pool.
+* @param lowVal	Low value of range, pointer to integer / double / char string
+* @param lowOp		Low operator (GT/GTE)
+* @param highVal	High value of range, pointer to integer / double / char string
+* @param highOp	High operator (LT/LTE)
+* @throws  BadOpcodesException If lowOp and highOp do not contain one of their their expected values
+* @throws  BadScanrangeException If lowVal > highval
+ * @throws  NoSuchKeyFoundException If there is no key in the B+ tree that satisfies the scan criteria.
+**/
 void BTreeIndex::startScan(const void* lowValParm,
 				   const Operator lowOpParm,
 				   const void* highValParm,
@@ -670,12 +672,12 @@ void BTreeIndex::startScan(const void* lowValParm,
 // -----------------------------------------------------------------------------
 
 /**
-	 * Fetch the record id of the next index entry that matches the scan.
-	 * Return the next record from current page being scanned. If current page has been scanned to its entirety, move on to the right sibling of current page, if any exists, to start scanning that page. Make sure to unpin any pages that are no longer required.
-   * @param outRid	RecordId of next record found that satisfies the scan criteria returned in this
-	 * @throws ScanNotInitializedException If no scan has been initialized.
-	 * @throws IndexScanCompletedException If no more records, satisfying the scan criteria, are left to be scanned.
-	**/
+ * Fetch the record id of the next index entry that matches the scan.
+ * Return the next record from current page being scanned. If current page has been scanned to its entirety, move on to the right sibling of current page, if any exists, to start scanning that page. Make sure to unpin any pages that are no longer required.
+* @param outRid	RecordId of next record found that satisfies the scan criteria returned in this
+ * @throws ScanNotInitializedException If no scan has been initialized.
+ * @throws IndexScanCompletedException If no more records, satisfying the scan criteria, are left to be scanned.
+**/
 void BTreeIndex::scanNext(RecordId& outRid) 
 {
     // Add your code below. Please do not remove this line.
@@ -689,7 +691,7 @@ void BTreeIndex::scanNext(RecordId& outRid)
     else {
         endScan();
         return;
-    };
+    }
 
     // get info for next entry to scan
     int key = curr_node->keyArray[nextEntry];
@@ -781,9 +783,9 @@ void BTreeIndex::scanNext(RecordId& outRid)
 //
 
 /**
-	 * Terminate the current scan. Unpin any pinned pages. Reset scan specific variables.
-	 * @throws ScanNotInitializedException If no scan has been initialized.
-	**/
+ * Terminate the current scan. Unpin any pinned pages. Reset scan specific variables.
+ * @throws ScanNotInitializedException If no scan has been initialized.
+**/
 void BTreeIndex::endScan() 
 {
     // Add your code below. Please do not remove this line.
@@ -797,7 +799,6 @@ void BTreeIndex::endScan()
     currentPageNum = MAX_PAGEID;
     currentPageData = nullptr;
     nextEntry = -1;
-
     scanExecuting = false;
 }
 
