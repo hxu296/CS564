@@ -404,14 +404,16 @@ void BTreeIndex::startScan(const void* lowValParm,
         throw BadOpcodesException();
 
     // If another scan is already executing, that needs to be ended here.
-    if (scanExecuting)
+    if (scanExecuting) {
         endScan();
+        return;
+    }
 
     // Start from root to find out the leaf page that contains the first RecordID
     // that satisfies the scan parameters. Keep that page pinned in the buffer pool.
 
     // first find the page that may contain first rid in given range
-    PageId target_page_id = findTargetLeaf(lowValParm); // this returns the page may contain the target key todo: no next page
+    PageId target_page_id = findTargetLeaf(lowValParm); // this returns the page may contain the target key
     Page *page;
     bufMgr->readPage(file, target_page_id, page);
     LeafNodeInt* leaf_node = ((LeafNodeInt*)page);
@@ -462,8 +464,74 @@ void BTreeIndex::startScan(const void* lowValParm,
 void BTreeIndex::scanNext(RecordId& outRid) 
 {
     // Add your code below. Please do not remove this line.
+    if(!scanExecuting)
+        throw ScanNotInitializedException();
 
-    // check currentPageNum, if currentPageNum
+    // check if currentPageNum is valid
+    LeafNodeInt* curr_node = nullptr; // current leaf node we are at
+    if (currentPageData != nullptr)
+        curr_node = (LeafNodeInt*)currentPageData;
+    else {
+        endScan();
+        return;
+    };
+
+    // get info for next entry to scan
+    int key = curr_node->keyArray[nextEntry];
+
+    if (highOp == LT) {
+        if (key < highValInt) {
+            outRid = curr_node->ridArray[nextEntry];
+
+            // update nextEntry
+            if (nextEntry == curr_node->size - 1) {
+                bufMgr->unPinPage(file, currentPageNum, false);
+                currentPageNum = curr_node->rightSibPageNo;
+                Page *rightSibpage;
+                if(curr_node->rightSibPageNo != MAX_PAGEID){
+                    bufMgr->readPage(file, curr_node->rightSibPageNo, rightSibpage);
+                    currentPageData = rightSibpage;
+                    nextEntry = 0;
+                }
+                else {
+                    throw IndexScanCompletedException();
+                }
+            }
+            else {
+                nextEntry++;
+            }
+        }
+        else {
+            throw IndexScanCompletedException();
+        }
+    }
+
+    if (highOp == LTE) {
+        if (key <= highValInt) {
+            outRid = curr_node->ridArray[nextEntry];
+
+            // update nextEntry
+            if (nextEntry == curr_node->size - 1) {
+                bufMgr->unPinPage(file, currentPageNum, false);
+                currentPageNum = curr_node->rightSibPageNo;
+                Page *rightSibpage;
+                if(curr_node->rightSibPageNo != MAX_PAGEID){
+                    bufMgr->readPage(file, curr_node->rightSibPageNo, rightSibpage);
+                    currentPageData = rightSibpage;
+                    nextEntry = 0;
+                }
+                else {
+                    throw IndexScanCompletedException();
+                }
+            }
+            else {
+                nextEntry++;
+            }
+        }
+        else {
+            throw IndexScanCompletedException();
+        }
+    }
         // if currentPageNum is valid
         // check if corresponding key
             // LT
@@ -511,7 +579,7 @@ void BTreeIndex::endScan()
     // unpins all the pages that have been pinned for the purpose of the scan
     bufMgr->unPinPage(file, currentPageNum, false);
     // clear the relative fields // TODO
-    currentPageNum = -1;
+    currentPageNum = MAX_PAGEID;
     currentPageData = nullptr;
     nextEntry = -1;
 
