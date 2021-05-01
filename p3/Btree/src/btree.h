@@ -98,7 +98,7 @@ public:
  * a smaller rid.pageNo value.
 */
 template <class T>
-bool operator<( const RIDKeyPair<T>& r1, const RIDKeyPair<T>& r2 )
+bool operator<( const RIDKeyPair<T>& r1, const RIDKeyPair<T>& r2)
 {
 	if( r1.key != r2.key )
 		return r1.key < r2.key;
