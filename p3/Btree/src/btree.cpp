@@ -251,10 +251,95 @@ void BTreeIndex::naiveInsertNonLeaf(PageId targetNonLeafId, const void *key, Pag
  * @param pageNo
  */
 void BTreeIndex::insertNonLeaf(PageId targetNonLeafId, const void *key, PageId pageNo){
-
+    // create newNonLeaf
+    Page *targetNonLeaf, *newNonLeaf;
+    PageId newNonLeafId;
+    bufMgr->readPage(file, targetNonLeafId, targetNonLeaf);
+    bufMgr->allocPage(file, newNonLeafId, newNonLeaf);
+    NonLeafNodeInt *targetNode = (NonLeafNodeInt*)targetNonLeaf;
+    NonLeafNodeInt *newNode = (NonLeafNodeInt*)newNonLeaf;
+    newNode->type = NONLEAF;
+    newNode->level = targetNode->level;
+    // split keys into left keys, mid key, and right keys.
+    int midIndex = (INTARRAYNONLEAFSIZE + 1) / 2;
+    int leftKeys[INTARRAYNONLEAFSIZE], rightKeys[INTARRAYNONLEAFSIZE], totalKeys[INTARRAYNONLEAFSIZE + 1], midKey;
+    int leftSize = 0, rightSize = 0, intKey = *(int*)key, i, j;
+    for(i = 0; i < INTARRAYNONLEAFSIZE && targetNode->keyArray[i] < intKey; i++)
+        totalKeys[i] = targetNode->keyArray[i];
+    totalKeys[i] = intKey;
+    for(; i < INTARRAYNONLEAFSIZE; i++)
+        totalKeys[i + 1] = targetNode->keyArray[i];
+    for(i = 0; i < midIndex; i++) {
+        leftKeys[i] = totalKeys[i];
+        leftSize++;
+    }
+    midKey = totalKeys[i++];
+    for(j = i; j < INTARRAYNONLEAFSIZE + 1; j++) {
+        rightKeys[j - i] = totalKeys[j];
+        rightSize++;
+    }
+    // split pageNo into left pageNo and right pageNo.
+    int leftPageNo[INTARRAYNONLEAFSIZE], rightPageNo[INTARRAYNONLEAFSIZE], totalPageNo[INTARRAYNONLEAFSIZE + 2];
+    for(i = 0; i < INTARRAYNONLEAFSIZE && targetNode->keyArray[i] <= intKey; i++)
+        totalPageNo[i] = targetNode->pageNoArray[i];
+    totalPageNo[i] = pageNo; //   i = insert key index + 1
+    for(; i < INTARRAYLEAFSIZE; i++)
+        totalPageNo[i + 1] = targetNode->pageNoArray[i];
+    for(i = 0; i <= midIndex; i++)
+        leftPageNo[i] = totalPageNo[i];
+    for(j = i; j < INTARRAYNONLEAFSIZE + 2; j++)
+        rightPageNo[j - i] = totalPageNo[j];
+    // assign left to targetNonLeaf, right to newNonLeaf
+    targetNode->size = leftSize;
+    std::copy(std::begin(leftKeys), std::end(leftKeys), std::begin(targetNode->keyArray));
+    std::copy(std::begin(leftPageNo), std::end(leftPageNo), std::begin(targetNode->pageNoArray));
+    newNode->size = rightSize;
+    std::copy(std::begin(rightKeys), std::end(rightKeys), std::begin(newNode->keyArray));
+    std::copy(std::begin(rightPageNo), std::end(rightPageNo), std::begin(newNode->pageNoArray));
+    // change the parent entry for children in right node.
+    for(i = 0; i < rightSize + 1; i++){
+        Page *childPage;
+        PageId childPageId = newNode->pageNoArray[i];
+        bufMgr->readPage(file, childPageId, childPage);
+        if(targetNode->level == 0){
+            NonLeafNodeInt* childNode = (NonLeafNodeInt*)childPage;
+            childNode->parenId = newNonLeafId;
+        } else{
+            LeafNodeInt* childNode = (LeafNodeInt*)childPage;
+            childNode->parenId = newNonLeafId;
+        }
+        bufMgr->unPinPage(file, childPageId, true);
+    }
+    // find parent for targetNonLeaf and newNonLeaf.
+    PageId parentPageId;
+    if(targetNode->parenId == 0){
+        // targetNode is root, allocate and setup parent page.
+        Page *parentPage;
+        bufMgr->allocPage(file, parentPageId, parentPage);
+        NonLeafNodeInt *parentNode = (NonLeafNodeInt*)parentPage;
+        parentNode->type = NONLEAF;
+        parentNode->parenId = 0;
+        parentNode->size = 0;
+        parentNode->level = 0;
+        bufMgr->unPinPage(file, parentPageId, true);
+        depth++;
+    } else{
+        parentPageId = targetNode->parenId;
+    }
+    // link targetNonLeaf and newNonLeaf to parent.
+    targetNode->parenId = newNode->parenId = parentPageId;
+    bufMgr->unPinPage(file, targetNonLeafId, true);
+    bufMgr->unPinPage(file, newNonLeafId, true);
+    // insert mid key to parent.
+    if(isFull(parentPageId)){
+        insertNonLeaf(parentPageId, &midKey, newNonLeafId); // todo: passing stack pointer to another call.
+    } else {
+        naiveInsertNonLeaf(parentPageId, &midKey, newNonLeafId);
+    }
 }
 
-void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId rid){    Page *targetLeaf, *newLeaf;
+void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId rid){
+    Page *targetLeaf, *newLeaf;
     PageId newLeafId;
     bufMgr->readPage(file, targetLeafId, targetLeaf);
     bufMgr->allocPage(file, newLeafId, newLeaf);
@@ -274,7 +359,7 @@ void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId
     totalIds[i] = rid;
     for(; i < INTARRAYLEAFSIZE; i++){
         totalKeys[i + 1] = targetNode->keyArray[i];
-        totalIds[i] = targetNode->ridArray[i];
+        totalIds[i + 1] = targetNode->ridArray[i];
     }
     for(i = 0; i < midIndex; i++){
         leftKeys[i] = totalKeys[i];
@@ -295,8 +380,6 @@ void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId
     std::copy(std::begin(rightIds), std::end(rightIds), std::begin(newNode->ridArray));
     newNode->rightSibPageNo = targetNode->rightSibPageNo;
     targetNode->rightSibPageNo = newLeafId;
-    bufMgr->unPinPage(file, targetLeafId, true);
-    bufMgr->unPinPage(file, newLeafId, true);
     // link newNode to targetNode's parent node.
     PageId parentPageId;
     if(targetNode->parenId == 0){
@@ -313,10 +396,14 @@ void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId
     } else{
         parentPageId = targetNode->parenId;
     }
+    targetNode->parenId = newNode->parenId = parentPageId;
+    bufMgr->unPinPage(file, targetLeafId, true);
+    bufMgr->unPinPage(file, newLeafId, true);
+
     if(isFull(parentPageId)){
         insertNonLeaf(parentPageId, (void *) newNode->keyArray, newLeafId);
     } else {
-        naiveInsertNonLeaf(parentPageId, (void *) newNode->keyArray, newLeafId);
+        naiveInsertNonLeaf(parentPageId, (void *) newNode->keyArray, newLeafId); // todo: check
     }
 }
 
