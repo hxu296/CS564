@@ -172,7 +172,7 @@ void test3()
 	// on attributes of all three types (int, double, string)
 	std::cout << "--------------------" << std::endl;
 	std::cout << "createRelationRandom" << std::endl;
-	createRelationRandom();
+	createRelationRandom(); // assigned relation to file 1
 	indexTests();
 	deleteRelation();
 }
@@ -183,6 +183,7 @@ void test3()
 
 void createRelationForward()
 {
+    printf("createRelationForward start\n");
 	std::vector<RecordId> ridVec;
   // destroy any old copies of relation file
 	try
@@ -224,6 +225,7 @@ void createRelationForward()
   }
 
 	file1->writePage(new_page_number, new_page);
+    printf("createRelationForward complete\n");
 }
 
 // -----------------------------------------------------------------------------
@@ -232,6 +234,7 @@ void createRelationForward()
 
 void createRelationBackward()
 {
+    printf("createRelationBackward start\n");
   // destroy any old copies of relation file
 	try
 	{
@@ -272,6 +275,7 @@ void createRelationBackward()
   }
 
 	file1->writePage(new_page_number, new_page);
+    printf("createRelationBackward complete\n");
 }
 
 // -----------------------------------------------------------------------------
@@ -280,6 +284,7 @@ void createRelationBackward()
 
 void createRelationRandom()
 {
+    printf("createRelationRandom start\n");
   // destroy any old copies of relation file
 	try
 	{
@@ -337,6 +342,7 @@ void createRelationRandom()
   }
   
 	file1->writePage(new_page_number, new_page);
+    printf("createRelationRandom complete\n");
 }
 
 // -----------------------------------------------------------------------------
@@ -345,6 +351,7 @@ void createRelationRandom()
 
 void indexTests()
 {
+  printf("indexTests start\n");
   intTests();
 	try
 	{
@@ -353,6 +360,7 @@ void indexTests()
   catch(const FileNotFoundException &e)
   {
   }
+    printf("indexTests complete\n");
 }
 
 // -----------------------------------------------------------------------------
@@ -361,6 +369,7 @@ void indexTests()
 
 void intTests()
 {
+    printf("intTests start\n");
   std::cout << "Create a B+ Tree index on the integer field" << std::endl;
   BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
 
@@ -372,10 +381,12 @@ void intTests()
 	checkPassFail(intScan(&index,0,GT,1,LT), 0)
 	checkPassFail(intScan(&index,300,GT,400,LT), 99)
 	checkPassFail(intScan(&index,3000,GTE,4000,LT), 1000)
+    printf("intTests complete\n");
 }
 
 int intScan(BTreeIndex * index, int lowVal, Operator lowOp, int highVal, Operator highOp)
 {
+    printf("intScan start\n");
   RecordId scanRid;
 	Page *curPage;
 
@@ -389,7 +400,9 @@ int intScan(BTreeIndex * index, int lowVal, Operator lowOp, int highVal, Operato
 	
 	try
 	{
+        printf("start scan called\n");
   	index->startScan(&lowVal, lowOp, &highVal, highOp);
+        printf("start scan finish\n");
 	}
 	catch(const NoSuchKeyFoundException &e)
 	{
@@ -430,7 +443,7 @@ int intScan(BTreeIndex * index, int lowVal, Operator lowOp, int highVal, Operato
   }
   index->endScan();
   std::cout << std::endl;
-
+    printf("intScan complete\n");
 	return numResults;
 }
 
@@ -440,6 +453,7 @@ int intScan(BTreeIndex * index, int lowVal, Operator lowOp, int highVal, Operato
 
 void errorTests()
 {
+    printf("errorTests start\n");
 	{
 		std::cout << "Error handling tests" << std::endl;
 		std::cout << "--------------------" << std::endl;
@@ -558,6 +572,7 @@ void errorTests()
   catch(const FileNotFoundException &e)
   {
   }
+    printf("errorTests complete\n");
 }
 
 void deleteRelation()

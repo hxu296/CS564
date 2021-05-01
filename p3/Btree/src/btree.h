@@ -178,6 +178,11 @@ struct NonLeafNodeInt{
    */
 	int level;
 
+    /**
+    * PageId of its parent node. 0 represents this page is root.
+    */
+    PageId parentId;
+
   /**
    * Stores keys.
    */
@@ -187,11 +192,6 @@ struct NonLeafNodeInt{
    * Stores page numbers of child pages which themselves are other non-leaf/leaf nodes in the tree.
    */
 	PageId pageNoArray[ INTARRAYNONLEAFSIZE + 1 ];
-
-    /**
-    * PageId of its parent node. 0 represents this page is root.
-    */
-    PageId parenId;
 };
 
 
@@ -209,6 +209,17 @@ struct LeafNodeInt{
   */
     int size;
 
+    /**
+    * PageId of its parent node. 0 represents this page is root.
+    */
+    PageId parentId;
+
+    /**
+  * Page number of the leaf on the right side.
+    * This linking of leaves allows to easily move from one leaf to the next leaf during index scan.
+  */
+    PageId rightSibPageNo;
+
   /**
   * Stores keys.
   */
@@ -219,16 +230,6 @@ struct LeafNodeInt{
    */
 	RecordId ridArray[ INTARRAYLEAFSIZE ];
 
-  /**
-   * Page number of the leaf on the right side.
-	 * This linking of leaves allows to easily move from one leaf to the next leaf during index scan.
-   */
-	PageId rightSibPageNo;
-
-    /**
-     * PageId of its parent node. 0 represents this page is root.
-     */
-    PageId parenId;
 };
 
 
@@ -244,6 +245,7 @@ class BTreeIndex {
    * File object for the index file.
    */
 	File		*file;
+
 
   /**
    * Buffer Manager Instance.
@@ -349,7 +351,13 @@ class BTreeIndex {
 
  private:
 
-    PageId MAX_PAGEID = 0xffffffff;
+    PageId MAX_PAGEID = 999999999;
+
+    void printLeaf(PageId id, LeafNodeInt* node);
+
+    void printTreeStatus();
+
+    void insertNewRoot(const void *key, PageId leftPageNo, PageId rightPageNo);
 
     /**
     * helper method for findTargetLeaf. Recursively find the PageId of the target leaf node.
