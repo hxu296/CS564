@@ -134,8 +134,8 @@ int main(int argc, char **argv)
 
 	File::remove(relationName);
 
-	test1();
-	test2();
+	//test1();
+	//test2();
 	test3();
 	errorTests();
 
@@ -374,12 +374,17 @@ void intTests()
   BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
 
 	// run some tests
+    //checkPassFail(intScan(&index,5005,GTE,5010,LT), 0) // Jing added
+    //checkPassFail(intScan(&index,2677,GTE,2788,LT), 111) // Jing added
+    //checkPassFail(intScan(&index,654,GT,1001,LT), 348) // Jing added
 	checkPassFail(intScan(&index,25,GT,40,LT), 14)
 	checkPassFail(intScan(&index,20,GTE,35,LTE), 16)
 	checkPassFail(intScan(&index,-3,GT,3,LT), 3)
+    //checkPassFail(intScan(&index,-3,GT,3,LTE), 3) // Jing added
 	checkPassFail(intScan(&index,996,GT,1001,LT), 4)
 	checkPassFail(intScan(&index,0,GT,1,LT), 0)
 	checkPassFail(intScan(&index,300,GT,400,LT), 99)
+    //checkPassFail(intScan(&index,380,GT,400,LT), 19) // Jing added
 	checkPassFail(intScan(&index,3000,GTE,4000,LT), 1000)
     printf("intTests complete\n");
 }

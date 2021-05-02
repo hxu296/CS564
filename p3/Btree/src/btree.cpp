@@ -532,7 +532,7 @@ void BTreeIndex::insertEntry(const void *key, const RecordId rid)
     * @param key
     * @param pageNo
     */
-int BTreeIndex::searchHelper(const void *key, LeafNodeInt* node, LeafNodeInt*& new_node)
+int BTreeIndex::searchHelper(const void *key, LeafNodeInt* node, LeafNodeInt*& new_node, PageId& new_id)
 {
     int targetIndex = -1;
 
@@ -553,6 +553,8 @@ int BTreeIndex::searchHelper(const void *key, LeafNodeInt* node, LeafNodeInt*& n
         bufMgr->readPage(file, node->rightSibPageNo, rightSibpage);
         node = (LeafNodeInt*)rightSibpage;
         new_node = node; // return the new node TODO
+        new_id = node->rightSibPageNo;
+        printNode(node->rightSibPageNo, rightSibpage);
 
         for (int i = 0; i < node->size; i++) {
             if (node->keyArray[i] >= *((int*)key)) {
@@ -590,6 +592,14 @@ void BTreeIndex::startScan(const void* lowValParm,
 				   const Operator highOpParm)
 {
     //printTreeStatus();
+//    Page *page1;
+//    bufMgr->readPage(file, 600, page1);
+//    bufMgr->unPinPage(file, 600, false);
+//    printNode(600, page1);
+//    Page *page2;
+//    bufMgr->readPage(file, 677, page2);
+//    bufMgr->unPinPage(file, 677, false);
+//    printNode(677, page2);
     // Add your code below. Please do not remove this line.
     std::cout << "Here start scanning"<< std::endl;
     // convert the input to int (assumed only use integer)
@@ -619,23 +629,22 @@ void BTreeIndex::startScan(const void* lowValParm,
 
     // first find the page that may contain first rid in given range
     PageId target_page_id = findTargetLeaf(lowValParm); // this returns the page may contain the target key
-    std::cout << "low value is " << lowValInt << std::endl;
-    std::cout << "Target page id is " << target_page_id << std::endl;
     Page *page;
     bufMgr->readPage(file, target_page_id, page);
-    std::cout << "After reading"<< std::endl;
+    printTreeStatus();
+    printNode(target_page_id, page);
     LeafNodeInt* curr_leaf_node = ((LeafNodeInt*)page);
     LeafNodeInt* target_node = curr_leaf_node; // store the updated node after search
 
     // we then do the search to see if it really exists
-    int key_index = searchHelper(lowValParm, curr_leaf_node, target_node);
+    int key_index = searchHelper(lowValParm, curr_leaf_node, target_node,target_page_id);
     if (key_index == -1) {
-        bufMgr->unPinPage(file, ((Page*)target_node)->page_number(), false); // unpin page no longer useful
+        bufMgr->unPinPage(file, target_page_id, false); // unpin page no longer useful
         throw NoSuchKeyFoundException();
     }
     else { // found
         if (lowOp == GTE) {
-            currentPageNum = ((Page*)target_node)->page_number();
+            currentPageNum = target_page_id;
             currentPageData = (Page*)target_node;
             nextEntry = key_index;
         }
@@ -645,7 +654,11 @@ void BTreeIndex::startScan(const void* lowValParm,
                 // next key is in next entry
                 if (key_index == target_node->size - 1) {
                     // pin the right sibling (rightSibPageNo)
-                    bufMgr->unPinPage(file, ((Page*)target_node)->page_number(), false);
+                    std::cout << "Target page id is " << target_page_id << std::endl;
+                    std::cout << "Key index is " << key_index << std::endl;
+                    std::cout << "Try unpinning in GT"<< std::endl;
+                    bufMgr->unPinPage(file, target_page_id, false);
+                    std::cout << "After Unpinning"<< std::endl;
                     currentPageNum = target_node->rightSibPageNo;
                     Page *rightSibpage;
                     if(target_node->rightSibPageNo != MAX_PAGEID){
@@ -655,13 +668,13 @@ void BTreeIndex::startScan(const void* lowValParm,
                     }
                 }
                 else {
-                    currentPageNum = ((Page*)target_node)->page_number();
+                    currentPageNum = target_page_id;
                     currentPageData = (Page*)target_node;
                     nextEntry = key_index + 1;
                 }
             }
             else { // returned one is correct one
-                currentPageNum = ((Page*)target_node)->page_number();
+                currentPageNum = target_page_id;
                 currentPageData = (Page*)target_node;
                 nextEntry = key_index;
             }

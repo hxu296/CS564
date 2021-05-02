@@ -433,7 +433,7 @@ class BTreeIndex {
     * @param key
     * @param pageNo
     */
-    int searchHelper(const void *key, LeafNodeInt* node, LeafNodeInt*& new_node);
+    int searchHelper(const void *key, LeafNodeInt* node, LeafNodeInt*& new_node, PageId& new_id);
 
  public:
 
