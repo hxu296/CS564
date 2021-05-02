@@ -202,7 +202,7 @@ void createRelationForward()
   Page new_page = file1->allocatePage(new_page_number);
 
   // Insert a bunch of tuples into the relation.
-  for(int i = 0; i < 2; i++ )
+  for(int i = 0; i < relationSize; i++ )
 	{
     sprintf(record1.s, "%05d string record", i);
     record1.i = i;
@@ -374,11 +374,11 @@ void intTests()
   BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
 
 	// run some tests
-    //checkPassFail(intScan(&index,5005,GTE,5010,LT), 0) // Jing added
-    //checkPassFail(intScan(&index,2677,GTE,2788,LT), 111) // Jing added
-    //checkPassFail(intScan(&index,654,GT,1001,LT), 348) // Jing added
-	//checkPassFail(intScan(&index,25,GT,40,LT), 14)
-	//checkPassFail(intScan(&index,20,GTE,35,LTE), 16)
+    checkPassFail(intScan(&index,5005,GTE,5010,LT), 0) // Jing added
+    checkPassFail(intScan(&index,2677,GTE,2788,LT), 111) // Jing added
+    checkPassFail(intScan(&index,654,GT,1001,LT), 348) // Jing added
+	checkPassFail(intScan(&index,25,GT,40,LT), 14)
+	checkPassFail(intScan(&index,20,GTE,35,LTE), 16)
 	checkPassFail(intScan(&index,-3,GT,3,LT), 3)
     //checkPassFail(intScan(&index,-3,GT,3,LTE), 3) // Jing added
 	//checkPassFail(intScan(&index,996,GT,1001,LT), 4)

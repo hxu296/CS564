@@ -352,13 +352,16 @@ void BTreeIndex::naiveInsertNonLeaf(PageId targetNonLeafId, const void *key, Pag
  */
 void BTreeIndex::insertNewRoot(const void *key, PageId leftPageNo, PageId rightPageNo){
     Page *rootPage;
+    int intKey = *(int*)key;
     bufMgr->readPage(file, rootPageNum, rootPage);
     NonLeafNodeInt *rootNode = (NonLeafNodeInt*)rootPage;
-    rootNode->keyArray[0] = *(int*)key;
+    rootNode->keyArray[0] = intKey;
     rootNode->pageNoArray[0] = leftPageNo;
     rootNode->pageNoArray[1] = rightPageNo;
+    rootNode->size++;
     bufMgr->unPinPage(file, rootPageNum, true);
     nodeOccupancy++;
+    //printNode(rootPageNum, rootPage);
 }
 
 /**
@@ -475,6 +478,7 @@ void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId
     PageId newLeafId;
     bufMgr->readPage(file, targetLeafId, targetLeaf);
     bufMgr->allocPage(file, newLeafId, newLeaf);
+    //printNode(targetLeafId, targetLeaf);
     LeafNodeInt *targetNode = (LeafNodeInt*)targetLeaf;
     LeafNodeInt *newNode = (LeafNodeInt*)newLeaf;
     newNode->type = LEAF;
@@ -515,6 +519,8 @@ void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId
     newNode->rightSibPageNo = targetNode->rightSibPageNo;
     targetNode->rightSibPageNo = newLeafId;
     leafOccupancy++;
+    //printNode(targetLeafId, targetLeaf);
+    //printNode(newLeafId, newLeaf);
     // link newNode to targetNode's parent node.
     PageId parentPageId;
     if(targetNode->parentId == MAX_PAGEID){
@@ -533,7 +539,7 @@ void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId
         targetNode->parentId = newNode->parentId = parentPageId;
         bufMgr->unPinPage(file, targetLeafId, true);
         bufMgr->unPinPage(file, newLeafId, true);
-        printf("new parentId: %d\n", parentPageId);
+        //printf("new parentId: %d\n", parentPageId);
         // insert midKey to parent.
         insertNewRoot(midKey, targetLeafId, newLeafId);
     } else{
@@ -596,7 +602,7 @@ int BTreeIndex::searchHelper(const void *key, LeafNodeInt* node, LeafNodeInt*& n
         node = (LeafNodeInt*)rightSibpage;
         new_node = node; // return the new node TODO
         new_id = node->rightSibPageNo;
-        printNode(node->rightSibPageNo, rightSibpage);
+        //printNode(node->rightSibPageNo, rightSibpage);
 
         for (int i = 0; i < node->size; i++) {
             if (node->keyArray[i] >= *((int*)key)) {
@@ -743,7 +749,7 @@ void BTreeIndex::startScan(const void* lowValParm,
  * @throws ScanNotInitializedException If no scan has been initialized.
  * @throws IndexScanCompletedException If no more records, satisfying the scan criteria, are left to be scanned.
 **/
-void BTreeIndex::scanNext(RecordId& outRid) 
+void BTreeIndex::scanNext(RecordId& outRid)
 {
     // Add your code below. Please do not remove this line.
     if(!scanExecuting)
