@@ -767,7 +767,8 @@ namespace badgerdb
             throw ScanNotInitializedException();
 
         // unpins all the pages that have been pinned for the purpose of the scan
-        bufMgr->unPinPage(file, currentPageNum, false);
+        if (currentPageNum != MAX_PAGEID)
+            bufMgr->unPinPage(file, currentPageNum, false);
 
         // clear the relative fields
         currentPageNum = MAX_PAGEID;
