@@ -64,14 +64,21 @@ BufMgr * bufMgr = new BufMgr(100);
 // -----------------------------------------------------------------------------
 
 void createRelationForward();
+void createRelationForwardWithNegative();
 void createRelationBackward();
 void createRelationRandom();
 void intTests();
+void intTests1();
+void intTests2();
 int intScan(BTreeIndex *index, int lowVal, Operator lowOp, int highVal, Operator highOp);
 void indexTests();
+void indexTests1();
+void indexTests2();
 void test1();
 void test2();
 void test3();
+void test4();
+void test5();
 void errorTests();
 void deleteRelation();
 
@@ -134,9 +141,11 @@ int main(int argc, char **argv)
 
 	File::remove(relationName);
 
-	test1();
-	test2();
-	test3();
+	//test1();
+	//test2();
+	//test3();
+	test4();
+    //test5();
 	errorTests();
 
 	delete bufMgr;
@@ -175,6 +184,28 @@ void test3()
 	createRelationRandom(); // assigned relation to file 1
 	indexTests();
 	deleteRelation();
+}
+
+void test4()
+{
+    // Create a relation with tuples valued 0 to relationSize in random order and perform index tests
+    // on attributes of all three types (int, double, string)
+    std::cout << "--------------------" << std::endl;
+    std::cout << "createRelationRandom" << std::endl;
+    createRelationRandom(); // assigned relation to file 1
+    indexTests1();
+    deleteRelation();
+}
+
+void test5()
+{
+    // Create a relation with tuples valued 0 to relationSize in random order and perform index tests
+    // on attributes of all three types (int, double, string)
+    std::cout << "--------------------" << std::endl;
+    std::cout << "createRelationForwardWithNegative" << std::endl;
+    createRelationForwardWithNegative(); // assigned relation to file 1
+    indexTests2();
+    deleteRelation();
 }
 
 // -----------------------------------------------------------------------------
@@ -226,6 +257,53 @@ void createRelationForward()
 
 	file1->writePage(new_page_number, new_page);
     printf("createRelationForward complete\n");
+}
+
+void createRelationForwardWithNegative()
+{
+    printf("createRelationForwardWithNegative start\n");
+    std::vector<RecordId> ridVec;
+    // destroy any old copies of relation file
+    try
+    {
+        File::remove(relationName);
+    }
+    catch(const FileNotFoundException &e)
+    {
+    }
+
+    file1 = new PageFile(relationName, true);
+
+    // initialize all of record1.s to keep purify happy
+    memset(record1.s, ' ', sizeof(record1.s));
+    PageId new_page_number;
+    Page new_page = file1->allocatePage(new_page_number);
+
+    // Insert a bunch of tuples into the relation.
+    for(int i = -relationSize; i < relationSize; i++ )
+    {
+        sprintf(record1.s, "%05d string record", i);
+        record1.i = i;
+        record1.d = (double)i;
+        std::string new_data(reinterpret_cast<char*>(&record1), sizeof(record1));
+
+        while(1)
+        {
+            try
+            {
+                new_page.insertRecord(new_data);
+                break;
+            }
+            catch(const InsufficientSpaceException &e)
+            {
+                file1->writePage(new_page_number, new_page);
+                new_page = file1->allocatePage(new_page_number);
+            }
+        }
+    }
+
+    file1->writePage(new_page_number, new_page);
+    printf("createRelationForwardWithNegative complete\n");
 }
 
 // -----------------------------------------------------------------------------
@@ -363,6 +441,34 @@ void indexTests()
     printf("indexTests complete\n");
 }
 
+void indexTests1()
+{
+    printf("indexTests1 start\n");
+    intTests1();
+    try
+    {
+        File::remove(intIndexName);
+    }
+    catch(const FileNotFoundException &e)
+    {
+    }
+    printf("indexTests1 complete\n");
+}
+
+void indexTests2()
+{
+    printf("indexTests2 start\n");
+    intTests2();
+    try
+    {
+        File::remove(intIndexName);
+    }
+    catch(const FileNotFoundException &e)
+    {
+    }
+    printf("indexTests2 complete\n");
+}
+
 // -----------------------------------------------------------------------------
 // intTests
 // -----------------------------------------------------------------------------
@@ -374,19 +480,44 @@ void intTests()
   BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
 
 	// run some tests
-    checkPassFail(intScan(&index,5005,GTE,5010,LT), 0) // Jing added
-    checkPassFail(intScan(&index,2677,GTE,2788,LT), 111) // Jing added
-    checkPassFail(intScan(&index,654,GT,1001,LT), 346) // Jing added
 	checkPassFail(intScan(&index,25,GT,40,LT), 14)
 	checkPassFail(intScan(&index,20,GTE,35,LTE), 16)
 	checkPassFail(intScan(&index,-3,GT,3,LT), 3)
-    //checkPassFail(intScan(&index,-3,GT,3,LTE), 3) // Jing added
-	//checkPassFail(intScan(&index,996,GT,1001,LT), 4)
+	checkPassFail(intScan(&index,996,GT,1001,LT), 4)
 	checkPassFail(intScan(&index,0,GT,1,LT), 0)
 	checkPassFail(intScan(&index,0,GT,145,LT), 144)
-    //checkPassFail(intScan(&index,380,GT,400,LT), 19) // Jing added
-	//checkPassFail(intScan(&index,3000,GTE,4000,LT), 1000)
+	checkPassFail(intScan(&index,3000,GTE,4000,LT), 1000)
     printf("intTests complete\n");
+}
+
+void intTests1()
+{
+    printf("intTests1 start\n");
+    std::cout << "Create a B+ Tree index on the integer field" << std::endl;
+    BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
+
+    // run some tests
+    checkPassFail(intScan(&index,5005,GTE,5010,LT), 0)
+    checkPassFail(intScan(&index,2677,GTE,2788,LT), 111)
+    checkPassFail(intScan(&index,654,GT,1001,LT), 346)
+    checkPassFail(intScan(&index,-3,GT,3,LTE), 4)
+    checkPassFail(intScan(&index,380,GT,400,LT), 19)
+    checkPassFail(intScan(&index,-400,GT,400,LTE), 401)
+
+    printf("intTests1 complete\n");
+}
+
+void intTests2()
+{
+    printf("intTests2 start\n");
+    std::cout << "Create a B+ Tree index on the integer field" << std::endl;
+    BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
+
+    // run some tests
+    checkPassFail(intScan(&index,-5000,GTE,4000,LT), 9000)
+    checkPassFail(intScan(&index,-3,GT,3,LTE), 6)
+
+    printf("intTests2 complete\n");
 }
 
 int intScan(BTreeIndex * index, int lowVal, Operator lowOp, int highVal, Operator highOp)
