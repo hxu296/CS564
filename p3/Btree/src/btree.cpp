@@ -429,10 +429,12 @@ void BTreeIndex::insertNonLeaf(PageId targetNonLeafId, const void *key, PageId p
  * @param rid
  */
 void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId rid){
+    printf("start insert\n");
     Page *targetLeaf, *newLeaf;
     PageId newLeafId;
     bufMgr->readPage(file, targetLeafId, targetLeaf);
     bufMgr->allocPage(file, newLeafId, newLeaf);
+    printNode(targetLeafId, targetLeaf);
     LeafNodeInt *targetNode = (LeafNodeInt*)targetLeaf;
     LeafNodeInt *newNode = (LeafNodeInt*)newLeaf;
     newNode->type = LEAF;
@@ -473,6 +475,8 @@ void BTreeIndex::insertLeaf(PageId targetLeafId, const void *key, const RecordId
     newNode->rightSibPageNo = targetNode->rightSibPageNo;
     targetNode->rightSibPageNo = newLeafId;
     leafOccupancy++;
+    printNode(targetLeafId, targetLeaf);
+    printNode(newLeafId, newLeaf);
     // link newNode to targetNode's parent node.
     PageId parentPageId;
     if(targetNode->parentId == MAX_PAGEID){
@@ -589,7 +593,7 @@ void BTreeIndex::startScan(const void* lowValParm,
 				   const void* highValParm,
 				   const Operator highOpParm)
 {
-    //printTreeStatus();
+    printTreeStatus();
     // Add your code below. Please do not remove this line.
     std::cout << "Here start scanning"<< std::endl;
     // convert the input to int (assumed only use integer)
