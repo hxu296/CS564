@@ -70,15 +70,19 @@ void createRelationRandom();
 void intTests();
 void intTests1();
 void intTests2();
+void intTests3();
 int intScan(BTreeIndex *index, int lowVal, Operator lowOp, int highVal, Operator highOp);
+int intScan1(BTreeIndex *index, int lowVal, Operator lowOp, int highVal, Operator highOp);
 void indexTests();
 void indexTests1();
 void indexTests2();
+void indexTests3();
 void test1();
 void test2();
 void test3();
 void test4();
 void test5();
+void test6();
 void errorTests();
 void deleteRelation();
 
@@ -146,6 +150,7 @@ int main(int argc, char **argv)
 	test3();
 	test4();
     test5();
+    test6();
 	errorTests();
 
 	delete bufMgr;
@@ -205,6 +210,17 @@ void test5()
     std::cout << "createRelationForwardWithNegative" << std::endl;
     createRelationForwardWithNegative(); // assigned relation to file 1
     indexTests2();
+    deleteRelation();
+}
+
+void test6()
+{
+    // Create a relation with tuples valued 0 to relationSize in random order and perform index tests
+    // on attributes of all three types (int, double, string)
+    std::cout << "--------------------" << std::endl;
+    std::cout << "Boundary numbers" << std::endl;
+    createRelationRandom(); // assigned relation to file 1
+    indexTests3();
     deleteRelation();
 }
 
@@ -469,6 +485,20 @@ void indexTests2()
     printf("indexTests2 complete\n");
 }
 
+void indexTests3()
+{
+    printf("indexTests3 start\n");
+    intTests3();
+    try
+    {
+        File::remove(intIndexName);
+    }
+    catch(const FileNotFoundException &e)
+    {
+    }
+    printf("indexTests3 complete\n");
+}
+
 // -----------------------------------------------------------------------------
 // intTests
 // -----------------------------------------------------------------------------
@@ -518,6 +548,18 @@ void intTests2()
     checkPassFail(intScan(&index,-3,GT,3,LTE), 6)
 
     printf("intTests2 complete\n");
+}
+
+void intTests3()
+{
+    printf("intTests3 start\n");
+    std::cout << "Create a B+ Tree index on the integer field" << std::endl;
+    BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
+
+    // run some tests
+    checkPassFail(intScan1(&index,4999,GTE,5000,LT), 1)
+
+    printf("intTests3 complete\n");
 }
 
 int intScan(BTreeIndex * index, int lowVal, Operator lowOp, int highVal, Operator highOp)
@@ -582,6 +624,61 @@ int intScan(BTreeIndex * index, int lowVal, Operator lowOp, int highVal, Operato
 	return numResults;
 }
 
+int intScan1(BTreeIndex * index, int lowVal, Operator lowOp, int highVal, Operator highOp)
+{
+    printf("intScan1 start\n");
+    RecordId scanRid;
+    Page *curPage;
+
+    std::cout << "Scan for ";
+    if( lowOp == GT ) { std::cout << "("; } else { std::cout << "["; }
+    std::cout << lowVal << "," << highVal;
+    if( highOp == LT ) { std::cout << ")"; } else { std::cout << "]"; }
+    std::cout << std::endl;
+
+    int numResults = 0;
+
+    try
+    {
+        index->startScan(&lowVal, lowOp, &highVal, highOp);
+    }
+    catch(const NoSuchKeyFoundException &e)
+    {
+        std::cout << "No Key Found satisfying the scan criteria." << std::endl;
+        return 0;
+    }
+    try
+    {
+        index->scanNext(scanRid);
+    }
+    catch(const IndexScanCompletedException &e)
+    {
+        bufMgr->readPage(file1, scanRid.page_number, curPage);
+        RECORD myRec = *(reinterpret_cast<const RECORD*>(curPage->getRecord(scanRid).data()));
+        bufMgr->unPinPage(file1, scanRid.page_number, false);
+
+        if( numResults < 5 )
+        {
+            std::cout << "at:" << scanRid.page_number << "," << scanRid.slot_number;
+            std::cout << " -->:" << myRec.i << ":" << myRec.d << ":" << myRec.s << ":" <<std::endl;
+        }
+        else if( numResults == 5 )
+        {
+            std::cout << "..." << std::endl;
+        }
+    }
+
+    numResults++;
+
+    if( numResults >= 5 )
+    {
+        std::cout << "Number of results: " << numResults << std::endl;
+    }
+    index->endScan();
+    std::cout << std::endl;
+    printf("intScan1 complete\n");
+    return numResults;
+}
 // -----------------------------------------------------------------------------
 // errorTests
 // -----------------------------------------------------------------------------
