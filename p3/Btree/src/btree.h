@@ -52,14 +52,14 @@ enum Operator
  * @brief Number of key slots in B+Tree leaf for INTEGER key.
  */
 //                                                  sibling ptr             key               rid
-//const  int INTARRAYLEAFSIZE = ( Page::SIZE - sizeof( PageId ) ) / ( sizeof( int ) + sizeof( RecordId ) );
-const int INTARRAYLEAFSIZE = 10;
+const  int INTARRAYLEAFSIZE = ( Page::SIZE - sizeof( PageId ) ) / ( sizeof( int ) + sizeof( RecordId ) );
+//const int INTARRAYLEAFSIZE = 4;
 /**
  * @brief Number of key slots in B+Tree non-leaf for INTEGER key.
  */
 //                                                     level     extra pageNo                  key       pageNo
-//const  int INTARRAYNONLEAFSIZE = ( Page::SIZE - sizeof( int ) - sizeof( PageId ) ) / ( sizeof( int ) + sizeof( PageId ) );
-const  int INTARRAYNONLEAFSIZE = 20;
+const  int INTARRAYNONLEAFSIZE = ( Page::SIZE - sizeof( int ) - sizeof( PageId ) ) / ( sizeof( int ) + sizeof( PageId ) );
+//const  int INTARRAYNONLEAFSIZE = 1000;
 /**
  * @brief Structure to store a key-rid pair. It is used to pass the pair to functions that 
  * add to or make changes to the leaf node pages of the tree. Is templated for the key member.
@@ -352,6 +352,21 @@ class BTreeIndex {
  private:
 
     PageId MAX_PAGEID = 999999999;
+
+//    /**
+//    * Recursively find the PageId of the start page to scan.
+//    * @param pageId
+//    * @param key
+//    * @return
+//    */
+//    PageId findScanStartHelper(PageId pageId, const void *key);
+
+//    /**
+//    * Return the leaf node PageId to start scanning.
+//    * @param key
+//    * @return Leaf node PageId to insert the key in.
+//    */
+//    PageId findScanStart(const void *key);
 
     /**
      * Print the statistics of a node. Recognize node type within method.

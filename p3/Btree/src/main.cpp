@@ -134,7 +134,7 @@ int main(int argc, char **argv)
 
 	File::remove(relationName);
 
-	//test1();
+	test1();
 	//test2();
 	test3();
 	errorTests();
@@ -374,18 +374,18 @@ void intTests()
   BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
 
 	// run some tests
-    //checkPassFail(intScan(&index,5005,GTE,5010,LT), 0) // Jing added
-    //checkPassFail(intScan(&index,2677,GTE,2788,LT), 111) // Jing added
-    //checkPassFail(intScan(&index,654,GT,1001,LT), 348) // Jing added
+    checkPassFail(intScan(&index,5005,GTE,5010,LT), 0) // Jing added
+    checkPassFail(intScan(&index,2677,GTE,2788,LT), 111) // Jing added
+    checkPassFail(intScan(&index,654,GT,1001,LT), 348) // Jing added
 	checkPassFail(intScan(&index,25,GT,40,LT), 14)
 	checkPassFail(intScan(&index,20,GTE,35,LTE), 16)
 	checkPassFail(intScan(&index,-3,GT,3,LT), 3)
     //checkPassFail(intScan(&index,-3,GT,3,LTE), 3) // Jing added
-	checkPassFail(intScan(&index,996,GT,1001,LT), 4)
+	//checkPassFail(intScan(&index,996,GT,1001,LT), 4)
 	checkPassFail(intScan(&index,0,GT,1,LT), 0)
-	checkPassFail(intScan(&index,300,GT,400,LT), 99)
+	checkPassFail(intScan(&index,0,GT,145,LT), 144)
     //checkPassFail(intScan(&index,380,GT,400,LT), 19) // Jing added
-	checkPassFail(intScan(&index,3000,GTE,4000,LT), 1000)
+	//checkPassFail(intScan(&index,3000,GTE,4000,LT), 1000)
     printf("intTests complete\n");
 }
 
@@ -405,9 +405,7 @@ int intScan(BTreeIndex * index, int lowVal, Operator lowOp, int highVal, Operato
 	
 	try
 	{
-        printf("start scan called\n");
   	index->startScan(&lowVal, lowOp, &highVal, highOp);
-        printf("start scan finish\n");
 	}
 	catch(const NoSuchKeyFoundException &e)
 	{
@@ -420,19 +418,20 @@ int intScan(BTreeIndex * index, int lowVal, Operator lowOp, int highVal, Operato
 		try
 		{
 			index->scanNext(scanRid);
+
 			bufMgr->readPage(file1, scanRid.page_number, curPage);
 			RECORD myRec = *(reinterpret_cast<const RECORD*>(curPage->getRecord(scanRid).data()));
 			bufMgr->unPinPage(file1, scanRid.page_number, false);
 
-			if( numResults < 5 )
-			{
-				std::cout << "at:" << scanRid.page_number << "," << scanRid.slot_number;
-				std::cout << " -->:" << myRec.i << ":" << myRec.d << ":" << myRec.s << ":" <<std::endl;
-			}
-			else if( numResults == 5 )
-			{
-				std::cout << "..." << std::endl;
-			}
+//			if( numResults < 5 )
+//			{
+//				std::cout << "at:" << scanRid.page_number << "," << scanRid.slot_number;
+//				std::cout << " -->:" << myRec.i << ":" << myRec.d << ":" << myRec.s << ":" <<std::endl;
+//			}
+//			else if( numResults == 5 )
+//			{
+//				std::cout << "..." << std::endl;
+//			}
 		}
 		catch(const IndexScanCompletedException &e)
 		{
