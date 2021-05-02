@@ -50,7 +50,6 @@ namespace badgerdb
         std::string indexName = idxStr.str();
         outIndexName = indexName;
         // set up index file.
-        std::cout << indexName << std::endl;
         if(BlobFile::exists(indexName)){
             // index file exists.
             file = new BlobFile(indexName, false);
@@ -569,10 +568,6 @@ namespace badgerdb
         return targetIndex;
     }
 
-    // -----------------------------------------------------------------------------
-    // BTreeIndex::startScan
-    // -----------------------------------------------------------------------------
-
     /**
      * Begin a filtered scan of the index.  For instance, if the method is called
      * using ("a",GT,"d",LTE) then we should seek all entries with a value
@@ -665,10 +660,6 @@ namespace badgerdb
         scanExecuting = true;
     }
 
-    // -----------------------------------------------------------------------------
-    // BTreeIndex::scanNext
-    // -----------------------------------------------------------------------------
-
     /**
      * Fetch the record id of the next index entry that matches the scan.
      * Return the next record from current page being scanned.
@@ -699,7 +690,6 @@ namespace badgerdb
         if (highOp == LT) {
             if (key < highValInt) {
                 outRid = curr_node->ridArray[nextEntry];
-
                 // update nextEntry
                 if (nextEntry == curr_node->size - 1) {
                     bufMgr->unPinPage(file, currentPageNum, false);
@@ -709,16 +699,13 @@ namespace badgerdb
                         bufMgr->readPage(file, curr_node->rightSibPageNo, rightSibpage);
                         currentPageData = rightSibpage;
                         nextEntry = 0;
-                    }
-                    else {
+                    } else {
                         throw IndexScanCompletedException();
                     }
-                }
-                else {
+                } else {
                     nextEntry++;
                 }
-            }
-            else {
+            } else {
                 throw IndexScanCompletedException();
             }
         }
@@ -726,7 +713,6 @@ namespace badgerdb
         if (highOp == LTE) {
             if (key <= highValInt) {
                 outRid = curr_node->ridArray[nextEntry];
-
                 // update nextEntry
                 if (nextEntry == curr_node->size - 1) {
                     bufMgr->unPinPage(file, currentPageNum, false);
@@ -736,25 +722,17 @@ namespace badgerdb
                         bufMgr->readPage(file, curr_node->rightSibPageNo, rightSibpage);
                         currentPageData = rightSibpage;
                         nextEntry = 0;
-                    }
-                    else {
+                    } else {
                         throw IndexScanCompletedException();
                     }
-                }
-                else {
+                } else {
                     nextEntry++;
                 }
-            }
-            else {
+            } else {
                 throw IndexScanCompletedException();
             }
         }
     }
-
-    // -----------------------------------------------------------------------------
-    // BTreeIndex::endScan
-    // -----------------------------------------------------------------------------
-    //
 
     /**
      * Terminate the current scan. Unpin any pinned pages. Reset scan specific variables.
