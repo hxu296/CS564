@@ -46,4 +46,4 @@ Because leaves of the tree form a linked list with keys sorted in the ascending 
 
 For the test cases:
 1. Inserting larger amount of records including negative keys
-2. Adding more edge cases
+2. Adding more edge cases (something like testing 4999, which is the key at the end)
