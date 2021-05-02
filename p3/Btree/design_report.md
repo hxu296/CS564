@@ -35,7 +35,8 @@ PageId parent; // parent node's pageId. If this node is root, parent = MAX_PAGEI
 ```
 We put the nodeType attribute as the first attribute for both LeafNodeInt and NonLeafNodeInt. Hence, casting a page pointer to a nodeType pointer and getting its value will tell us whether a page is a leaf or a non-leaf.  
 The size attribute can tell us whether a node is full. In the actual implementation, we designate the `boolean isFull(PageId pageId)` helper method to do this for us.  
-The parent attribute is pretty much self-explanatory. The only worth-noting part is that the root node's parent is set to a very large global, `MAX_PAGEID`, for the sake of differentiating the root from other nodes. `MAX_PAGEID` is also the value of rightSibPageNo attribute for the right-most leaf node, indicating that we have reached the end of linked list.
+The parent attribute is pretty much self-explanatory. The only worth-noting part is that the root node's parent is set to a very large global, `MAX_PAGEID`, for the sake of differentiating the root from other nodes. `MAX_PAGEID` is also the value of rightSibPageNo attribute for the right-most leaf node, indicating that we have reached the end of linked list.  
+Finally, I want to point out that instead of using the maximum `INTARRAYLEAFSIZE` and `INTARRAYNONLEAFSIZE`. We have to decrease them by 1 to prevent some weird overflow issue. The performance loss here is neglectable. 
 ## 4. Tree 
 
 ### 4a. How to grow a B+ Tree?
