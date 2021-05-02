@@ -628,14 +628,14 @@ void BTreeIndex::startScan(const void* lowValParm,
     LeafNodeInt* target_node = curr_leaf_node; // store the updated node after search
 
     // we then do the search to see if it really exists
-    int key_index = searchHelper(lowValParm, curr_leaf_node, target_node, target_page_id);
+    int key_index = searchHelper(lowValParm, curr_leaf_node, target_node);
     if (key_index == -1) {
-        bufMgr->unPinPage(file, target_page_id, false); // unpin page no longer useful
+        bufMgr->unPinPage(file, ((Page*)target_node)->page_number(), false); // unpin page no longer useful
         throw NoSuchKeyFoundException();
     }
     else { // found
         if (lowOp == GTE) {
-            currentPageNum = target_page_id;
+            currentPageNum = ((Page*)target_node)->page_number();
             currentPageData = (Page*)target_node;
             nextEntry = key_index;
         }
@@ -645,7 +645,7 @@ void BTreeIndex::startScan(const void* lowValParm,
                 // next key is in next entry
                 if (key_index == target_node->size - 1) {
                     // pin the right sibling (rightSibPageNo)
-                    bufMgr->unPinPage(file, target_page_id, false);
+                    bufMgr->unPinPage(file, ((Page*)target_node)->page_number(), false);
                     currentPageNum = target_node->rightSibPageNo;
                     Page *rightSibpage;
                     if(target_node->rightSibPageNo != MAX_PAGEID){
