@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 	File::remove(relationName);
 
 	test1();
-	//test2();
+	test2();
 	test3();
 	errorTests();
 
@@ -376,7 +376,7 @@ void intTests()
 	// run some tests
     checkPassFail(intScan(&index,5005,GTE,5010,LT), 0) // Jing added
     checkPassFail(intScan(&index,2677,GTE,2788,LT), 111) // Jing added
-    checkPassFail(intScan(&index,654,GT,1001,LT), 348) // Jing added
+    checkPassFail(intScan(&index,654,GT,1001,LT), 346) // Jing added
 	checkPassFail(intScan(&index,25,GT,40,LT), 14)
 	checkPassFail(intScan(&index,20,GTE,35,LTE), 16)
 	checkPassFail(intScan(&index,-3,GT,3,LT), 3)
@@ -423,15 +423,15 @@ int intScan(BTreeIndex * index, int lowVal, Operator lowOp, int highVal, Operato
 			RECORD myRec = *(reinterpret_cast<const RECORD*>(curPage->getRecord(scanRid).data()));
 			bufMgr->unPinPage(file1, scanRid.page_number, false);
 
-//			if( numResults < 5 )
-//			{
-//				std::cout << "at:" << scanRid.page_number << "," << scanRid.slot_number;
-//				std::cout << " -->:" << myRec.i << ":" << myRec.d << ":" << myRec.s << ":" <<std::endl;
-//			}
-//			else if( numResults == 5 )
-//			{
-//				std::cout << "..." << std::endl;
-//			}
+			if( numResults < 5 )
+			{
+				std::cout << "at:" << scanRid.page_number << "," << scanRid.slot_number;
+				std::cout << " -->:" << myRec.i << ":" << myRec.d << ":" << myRec.s << ":" <<std::endl;
+			}
+			else if( numResults == 5 )
+			{
+				std::cout << "..." << std::endl;
+			}
 		}
 		catch(const IndexScanCompletedException &e)
 		{
