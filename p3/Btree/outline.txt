@@ -1,7 +1,0 @@
-This file gives direction to our design report and self-defined test cases.
-Let the directory containing this file be PROJECT_DIRECTORY.
-
-The design report is at PROJECT_DIRECTORY/design_report.md.
-The new test cases are at PROJECT_DIRECTORY/main.cpp. Methods test4(), test5(), and test6() are developed with the following objectives:
-    1. Tests whether the B+ Tree index can correctly handle a large amount of insertions with negative keys.
-    2. Tests whether the scanner of B+ Tree index can handle edge cases (e.g. only scan for the key at the end).
